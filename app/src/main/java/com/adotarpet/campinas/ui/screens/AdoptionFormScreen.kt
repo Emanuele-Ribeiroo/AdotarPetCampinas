@@ -2,6 +2,7 @@ package com.adotarpet.campinas.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,8 +23,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,6 +33,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.adotarpet.campinas.data.PetRepository
+import com.adotarpet.campinas.ui.components.Attachment
+import com.adotarpet.campinas.ui.components.AttachmentPicker
+import com.adotarpet.campinas.ui.components.FormSectionLabel
+import com.adotarpet.campinas.ui.components.FormTextField
 import com.adotarpet.campinas.ui.theme.CreamCard
 import com.adotarpet.campinas.ui.theme.Terracotta
 import com.adotarpet.campinas.ui.theme.TerracottaDark
@@ -55,6 +58,7 @@ fun AdoptionFormScreen(
     var cep by remember { mutableStateOf("") }
     var cidade by remember { mutableStateOf(pet.city) }
     var endereco by remember { mutableStateOf("") }
+    var anexosCasa by remember { mutableStateOf<List<Attachment>>(emptyList()) }
 
     Column(
         modifier = Modifier
@@ -67,22 +71,30 @@ fun AdoptionFormScreen(
         Text("Formulário de adoção", style = MaterialTheme.typography.headlineMedium, color = TerracottaDark)
 
         Spacer(Modifier.height(24.dp))
-        SectionLabel("SEUS DADOS")
-        FormField("Nome completo", "Como você se chama?", nome) { nome = it }
-        FormField("CPF", "000.000.000-00", cpf) { cpf = it }
+        FormSectionLabel("SEUS DADOS")
+        FormTextField("Nome completo", "Como você se chama?", nome) { nome = it }
+        FormTextField("CPF", "000.000.000-00", cpf) { cpf = it }
 
         Spacer(Modifier.height(16.dp))
-        SectionLabel("CONTATO")
-        FormField("Telefone / WhatsApp", "(19) 90000-0000", telefone) { telefone = it }
-        FormField("E-mail", "voce@email.com", email) { email = it }
+        FormSectionLabel("CONTATO")
+        FormTextField("Telefone / WhatsApp", "(19) 90000-0000", telefone) { telefone = it }
+        FormTextField("E-mail", "voce@email.com", email) { email = it }
 
         Spacer(Modifier.height(16.dp))
-        SectionLabel("ONDE O ANIMAL VAI MORAR")
+        FormSectionLabel("ONDE O ANIMAL VAI MORAR")
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FormField("CEP", "13000-000", cep, modifier = Modifier.weight(1f)) { cep = it }
-            FormField("Cidade", "Campinas", cidade, modifier = Modifier.weight(1f)) { cidade = it }
+            FormTextField("CEP", "13000-000", cep, modifier = Modifier.weight(1f)) { cep = it }
+            FormTextField("Cidade", "Campinas", cidade, modifier = Modifier.weight(1f)) { cidade = it }
         }
-        FormField("Endereço completo", "Rua, número, bairro", endereco) { endereco = it }
+        FormTextField("Endereço completo", "Rua, número, bairro", endereco) { endereco = it }
+
+        Spacer(Modifier.height(8.dp))
+        AttachmentPicker(
+            label = "Fotos e vídeo da casa",
+            helperText = "Ajuda a equipe a avaliar o espaço onde o animal vai morar",
+            attachments = anexosCasa,
+            onAttachmentsChange = { anexosCasa = it }
+        )
 
         Spacer(Modifier.height(20.dp))
         Card(
@@ -93,7 +105,7 @@ fun AdoptionFormScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                androidx.compose.foundation.layout.Box(
+                Box(
                     modifier = Modifier
                         .size(56.dp)
                         .background(TerracottaLight, RoundedCornerShape(12.dp)),
@@ -127,42 +139,5 @@ fun AdoptionFormScreen(
             Text("Enviar solicitação")
         }
         Spacer(Modifier.height(24.dp))
-    }
-}
-
-@Composable
-private fun SectionLabel(text: String) {
-    Text(
-        text,
-        style = MaterialTheme.typography.bodySmall,
-        color = TextSecondary,
-        modifier = Modifier.padding(bottom = 8.dp)
-    )
-}
-
-@Composable
-private fun FormField(
-    label: String,
-    placeholder: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    onValueChange: (String) -> Unit
-) {
-    Column(modifier = modifier.padding(bottom = 16.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 6.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = TextSecondary) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = CreamCard,
-                focusedContainerColor = CreamCard,
-                unfocusedBorderColor = CreamCard,
-                focusedBorderColor = Terracotta
-            ),
-            singleLine = true
-        )
     }
 }

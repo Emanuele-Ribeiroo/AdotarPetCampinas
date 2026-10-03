@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HelpOutline
@@ -53,17 +54,25 @@ import com.adotarpet.campinas.ui.theme.TextSecondary
 data class ProfileMenuItem(
     val icon: androidx.compose.ui.graphics.vector.ImageVector,
     val title: String,
-    val subtitle: String
+    val subtitle: String,
+    val onClick: () -> Unit = {}
 )
 
 @Composable
 fun ProfileScreen(
-    onPetClick: (String) -> Unit
+    onPetClick: (String) -> Unit,
+    onCadastrarAnimalClick: () -> Unit
 ) {
     val pets by PetRepository.pets.collectAsState()
     val favorites = pets.filter { it.isFavorite }
 
     val menuItems = listOf(
+        ProfileMenuItem(
+            Icons.Filled.AddCircle,
+            "Cadastrar animal",
+            "Divulgue um animal para adoção",
+            onClick = onCadastrarAnimalClick
+        ),
         ProfileMenuItem(Icons.Filled.Person, "Meus dados", "Nome, CPF, contato"),
         ProfileMenuItem(Icons.Filled.Description, "Minhas solicitações", "1 em análise"),
         ProfileMenuItem(Icons.Filled.WaterDrop, "Meus resgates", "Nenhum aberto"),
@@ -224,7 +233,9 @@ private fun MenuRow(item: ProfileMenuItem) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CreamCard),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { item.onClick() }
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

@@ -23,6 +23,7 @@ import com.adotarpet.campinas.ui.screens.ConfirmationScreen
 import com.adotarpet.campinas.ui.screens.HomeScreen
 import com.adotarpet.campinas.ui.screens.PetDetailScreen
 import com.adotarpet.campinas.ui.screens.ProfileScreen
+import com.adotarpet.campinas.ui.screens.RegisterAnimalScreen
 import com.adotarpet.campinas.ui.screens.RescueScreen
 import com.adotarpet.campinas.ui.theme.AdotarPetTheme
 
@@ -38,14 +39,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Telas em que a bottom bar aparece — as demais (detalhe, formulário, confirmação) ficam em tela cheia. */
-private val screensWithBottomBar = setOf(
-    Screen.Home.route,
-    Screen.Adotar.route,
-    Screen.Perfil.route,
-    Screen.Resgate.route
-)
-
 @Composable
 fun AdotarPetApp() {
     val navController: NavHostController = rememberNavController()
@@ -53,21 +46,20 @@ fun AdotarPetApp() {
     val currentRoute = backStackEntry?.destination?.route
 
     Scaffold(
+        // A bottom bar agora aparece em TODAS as telas do app, sem exceção.
         bottomBar = {
-            if (currentRoute in screensWithBottomBar) {
-                AdotarPetBottomBar(
-                    currentRoute = currentRoute,
-                    onItemClick = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+            AdotarPetBottomBar(
+                currentRoute = currentRoute,
+                onItemClick = { route ->
+                    navController.navigate(route) {
+                        popUpTo(navController.graph.findStartDestination().id) {
+                            saveState = true
                         }
+                        launchSingleTop = true
+                        restoreState = true
                     }
-                )
-            }
+                }
+            )
         }
     ) { innerPadding ->
         NavHost(
@@ -89,6 +81,9 @@ fun AdotarPetApp() {
                     },
                     onAdotarClick = { petId ->
                         navController.navigate(Screen.Formulario.createRoute(petId))
+                    },
+                    onCadastrarAnimalClick = {
+                        navController.navigate(Screen.CadastroAnimal.route)
                     }
                 )
             }
@@ -129,12 +124,22 @@ fun AdotarPetApp() {
             }
             composable(Screen.Perfil.route) {
                 ProfileScreen(
-                    onPetClick = { petId -> navController.navigate(Screen.PetDetail.createRoute(petId)) }
+                    onPetClick = { petId -> navController.navigate(Screen.PetDetail.createRoute(petId)) },
+                    onCadastrarAnimalClick = { navController.navigate(Screen.CadastroAnimal.route) }
                 )
             }
             composable(Screen.Resgate.route) {
                 RescueScreen(
                     onEnviarResgate = { /* TODO: enviar para backend/API */ }
+                )
+            }
+            composable(Screen.CadastroAnimal.route) {
+                RegisterAnimalScreen(
+                    onVerListaClick = {
+                        navController.navigate(Screen.Adotar.route) {
+                            popUpTo(Screen.Home.route)
+                        }
+                    }
                 )
             }
         }

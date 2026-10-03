@@ -77,6 +77,11 @@ object PetRepository {
 
     fun petById(id: String): Pet? = _pets.value.find { it.id == id }
 
+    /** Adiciona um novo animal cadastrado (ex.: pela tela "Cadastrar animal"). */
+    fun addPet(pet: Pet) {
+        _pets.update { list -> list + pet }
+    }
+
     fun toggleFavorite(id: String) {
         _pets.update { list ->
             list.map { if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it }

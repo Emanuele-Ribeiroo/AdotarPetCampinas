@@ -25,6 +25,7 @@ sealed class Screen(val route: String) {
     }
     data object Perfil : Screen("perfil")
     data object Resgate : Screen("resgate")
+    data object CadastroAnimal : Screen("cadastro-animal")
 }
 
 /** Itens exibidos na barra de navegação inferior, na mesma ordem do protótipo. */

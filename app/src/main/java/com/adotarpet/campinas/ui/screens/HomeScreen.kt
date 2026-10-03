@@ -7,7 +7,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -114,7 +116,10 @@ private fun HighlightCards(onDoarClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp),
+            .padding(20.dp)
+            // IntrinsicSize.Min faz o Row medir a altura que o card mais alto
+            // precisaria, e cada filho com fillMaxHeight() estica até lá.
+            .height(IntrinsicSize.Min),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         HighlightCard(
@@ -123,7 +128,9 @@ private fun HighlightCards(onDoarClick: () -> Unit) {
             description = "Ração, remédio ou qualquer valor ajuda um resgate.",
             buttonText = "Saiba mais",
             onClick = onDoarClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
         )
         HighlightCard(
             icon = Icons.Filled.Pets,
@@ -131,7 +138,9 @@ private fun HighlightCards(onDoarClick: () -> Unit) {
             description = "Ganhe um companheiro para a vida toda.",
             buttonText = "Saiba mais",
             onClick = onDoarClick,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
         )
     }
 }
@@ -151,7 +160,11 @@ private fun HighlightCard(
         colors = CardDefaults.cardColors(containerColor = CreamCard),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(16.dp)
+        ) {
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -164,7 +177,7 @@ private fun HighlightCard(
             Text(title, style = MaterialTheme.typography.titleMedium, color = TerracottaDark, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             Text(description, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.weight(1f))
             Button(
                 onClick = onClick,
                 shape = RoundedCornerShape(50),
@@ -259,7 +272,7 @@ private fun BecomeVolunteerBanner(onVoluntarioClick: () -> Unit) {
             Spacer(Modifier.height(12.dp))
             Text(
                 "Junte-se a nós para fazer a diferença na vida dos animais. Ajude nos resgates, " +
-                    "no lar temporário ou nas feiras de adoção em Campinas.",
+                        "no lar temporário ou nas feiras de adoção em Campinas.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextPrimary
             )

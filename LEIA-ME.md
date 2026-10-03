@@ -7,6 +7,11 @@ Projeto base gerado a partir do protótipo Figma, pronto para abrir no Android S
 2. Aguarde o **Gradle Sync** (primeira vez baixa o Gradle 8.7 e as dependências — precisa de internet).
 3. Rode no emulador ou celular físico (botão ▶️).
 
+## Atualizações desta versão
+- **Bottom bar corrigida**: removida uma altura fixa que conflitava com o espaçamento automático de sistema (gestos/nav bar do Android) e cortava o conteúdo. Agora ela também aparece em **todas** as telas do app, não só nas 4 principais.
+- **Anexos no formulário de adoção**: nova seção "Fotos e vídeo da casa" que abre o seletor de arquivos nativo do Android (fotos e vídeos), permite escolher vários de uma vez e remover cada um antes de enviar. Não pede permissão no Manifest (usa Storage Access Framework).
+- **Nova tela: Cadastrar animal** (`ui/screens/RegisterAnimalScreen.kt`) — formulário completo para registrar um novo animal (nome, espécie, sexo, idade, porte, castrado/vacinado, cidade, descrição, fotos/vídeo). Ao enviar, o animal aparece na hora na lista da tela Adotar (o repositório é reativo). Acessível por dois lugares: botão "+" flutuante na tela Adotar, e item "Cadastrar animal" no topo do menu da tela Perfil.
+
 ## O que já está implementado
 - Navegação completa com `navigation-compose`: Início → Adotar → Perfil do animal → Formulário → Confirmação, mais Perfil do usuário e Resgate.
 - Bottom bar fixa (Início / Adotar / Perfil / Resgate), igual ao protótipo.
