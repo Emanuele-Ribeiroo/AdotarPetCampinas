@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,26 +25,50 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.AddCircle
+import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import com.adotarpet.campinas.ui.components.PetPhoto
 import androidx.compose.ui.unit.dp
+import com.adotarpet.campinas.data.AuthRepository
+import com.adotarpet.campinas.data.HistoryRepository
 import com.adotarpet.campinas.data.PetRepository
+import com.adotarpet.campinas.data.SettingsRepository
+import com.adotarpet.campinas.data.ThemeMode
+import com.adotarpet.campinas.data.UserRole
+import com.adotarpet.campinas.data.UserRepository
+import com.adotarpet.campinas.ui.components.FilterChip
+import com.adotarpet.campinas.model.HistoryType
 import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.ui.theme.CreamCard
 import com.adotarpet.campinas.ui.theme.Terracotta
@@ -58,25 +84,65 @@ data class ProfileMenuItem(
     val onClick: () -> Unit = {}
 )
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     onPetClick: (String) -> Unit,
-    onCadastrarAnimalClick: () -> Unit
+    onAdminPanelClick: () -> Unit,
+    onMeusDadosClick: () -> Unit,
+    onHistoricoClick: (String) -> Unit,
+    onAjudaClick: () -> Unit
 ) {
     val pets by PetRepository.pets.collectAsState()
+    val profile by UserRepository.profile.collectAsState()
+    val themeMode by SettingsRepository.themeMode.collectAsState()
+    val darkNow = themeMode == ThemeMode.DARK || (themeMode == ThemeMode.SYSTEM && isSystemInDarkTheme())
+    val history by HistoryRepository.entries.collectAsState()
     val favorites = pets.filter { it.isFavorite }
+    val role by SettingsRepository.role.collectAsState()
+    val isAdmin = role == UserRole.ADMIN
+    val accountEmail by SettingsRepository.accountEmail.collectAsState()
+    val adoptions = history.count { it.type == HistoryType.ADOCAO }
+    val rescues = history.count { it.type == HistoryType.RESGATE }
+    var confirmClear by remember { mutableStateOf(false) }
 
-    val menuItems = listOf(
+    val menuItems = listOfNotNull(
+        if (isAdmin) ProfileMenuItem(
+            Icons.Filled.AdminPanelSettings,
+            "Painel do administrador",
+            "Cadastrar, editar, excluir e ver relatórios",
+            onClick = onAdminPanelClick
+        ) else null,
         ProfileMenuItem(
-            Icons.Filled.AddCircle,
-            "Cadastrar animal",
-            "Divulgue um animal para adoção",
-            onClick = onCadastrarAnimalClick
+            Icons.Filled.Person,
+            "Meus dados",
+            if (profile.isEmpty) "Preencha uma vez e use em todos os formulários" else "Nome, CPF, contato",
+            onClick = onMeusDadosClick
         ),
-        ProfileMenuItem(Icons.Filled.Person, "Meus dados", "Nome, CPF, contato"),
-        ProfileMenuItem(Icons.Filled.Description, "Minhas solicitações", "1 em análise"),
-        ProfileMenuItem(Icons.Filled.WaterDrop, "Meus resgates", "Nenhum aberto"),
-        ProfileMenuItem(Icons.Filled.HelpOutline, "Ajuda e contato", "Fale com a ONG"),
+        ProfileMenuItem(
+            Icons.Filled.Description,
+            "Minhas solicitações",
+            if (adoptions == 0) "Nenhuma ainda" else "$adoptions pedido(s) de adoção",
+            onClick = { onHistoricoClick(HistoryType.ADOCAO.name) }
+        ),
+        ProfileMenuItem(
+            Icons.Filled.WaterDrop,
+            "Meus resgates",
+            if (rescues == 0) "Nenhum aviso enviado" else "$rescues aviso(s) enviado(s)",
+            onClick = { onHistoricoClick(HistoryType.RESGATE.name) }
+        ),
+        ProfileMenuItem(
+            Icons.Filled.History,
+            "Meu histórico",
+            "Tudo que você fez no app",
+            onClick = { onHistoricoClick("TODOS") }
+        ),
+        ProfileMenuItem(
+            Icons.Filled.HelpOutline,
+            "Ajuda e contato",
+            "Fale com a ONG e veja parceiros",
+            onClick = onAjudaClick
+        ),
     )
 
     LazyColumn(
@@ -95,21 +161,40 @@ fun ProfileScreen(
                 }
                 Spacer(Modifier.width(16.dp))
                 Column {
-                    Text("Camila Ribeiro", style = MaterialTheme.typography.titleLarge, color = TerracottaDark)
-                    Text("Campinas · SP", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                     Text(
-                        "Cadastro aprovado em março de 2026",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        profile.name.ifBlank { "Visitante" },
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TerracottaDark
+                    )
+                    Text("${role.label} · Campinas · SP", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    if (profile.isEmpty) {
+                        Text(
+                            "Toque em \"Meus dados\" para completar seu perfil",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+                Spacer(Modifier.weight(1f))
+                IconButton(
+                    onClick = {
+                        SettingsRepository.setThemeMode(if (darkNow) ThemeMode.LIGHT else ThemeMode.DARK)
+                    },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = if (darkNow) Icons.Filled.LightMode else Icons.Filled.DarkMode,
+                        contentDescription = if (darkNow) "Mudar para o tema claro" else "Mudar para o tema escuro",
+                        tint = TerracottaDark
                     )
                 }
             }
 
             Spacer(Modifier.height(20.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                StatCard("2", "Favoritos", Modifier.weight(1f))
-                StatCard("1", "Solicitação", Modifier.weight(1f))
-                StatCard("3", "Anos ajudando", Modifier.weight(1f))
+                StatCard("${favorites.size}", "Favoritos", Modifier.weight(1f))
+                StatCard("$adoptions", "Solicitações", Modifier.weight(1f))
+                StatCard("$rescues", "Resgates", Modifier.weight(1f))
             }
 
             Spacer(Modifier.height(28.dp))
@@ -138,6 +223,21 @@ fun ProfileScreen(
             }
             Spacer(Modifier.height(28.dp))
             Text(
+                "CONTA CONECTADA",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+            if (accountEmail.isNotBlank()) {
+                Text(accountEmail, style = MaterialTheme.typography.bodyMedium, color = TerracottaDark)
+            }
+            Spacer(Modifier.height(8.dp))
+            OutlinedButton(onClick = AuthRepository::logout, shape = RoundedCornerShape(50)) {
+                Text("Sair da conta", color = TerracottaDark)
+            }
+
+            Spacer(Modifier.height(28.dp))
+            Text(
                 "MINHA CONTA",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
@@ -153,13 +253,29 @@ fun ProfileScreen(
         item {
             Spacer(Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { /* TODO: logout */ },
+                onClick = { confirmClear = true },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(50)
             ) {
-                Text("Sair da conta", color = TerracottaDark)
+                Text("Limpar meus dados", color = TerracottaDark)
             }
         }
+    }
+
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Limpar seus dados?") },
+            text = { Text("Apaga seu perfil e seu histórico neste celular. Os animais cadastrados e os favoritos continuam.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    UserRepository.clear()
+                    HistoryRepository.clear()
+                    confirmClear = false
+                }) { Text("Limpar", color = Terracotta) }
+            },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Cancelar") } }
+        )
     }
 }
 
@@ -192,10 +308,10 @@ private fun FavoritePetChip(pet: Pet, onClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1.2f)
-                .background(TerracottaLight, RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(16.dp)),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Filled.Pets, contentDescription = null, tint = TerracottaDark)
+            PetPhoto(pet, modifier = Modifier.fillMaxSize(), iconSize = 36.dp)
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)

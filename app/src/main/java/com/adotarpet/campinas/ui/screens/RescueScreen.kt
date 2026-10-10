@@ -28,8 +28,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -39,8 +37,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import com.adotarpet.campinas.data.HistoryRepository
+import com.adotarpet.campinas.data.UserRepository
+import com.adotarpet.campinas.model.HistoryType
+import com.adotarpet.campinas.ui.components.Attachment
+import com.adotarpet.campinas.ui.components.AttachmentPicker
 import com.adotarpet.campinas.ui.components.FilterChip
+import com.adotarpet.campinas.util.OngInfo
+import com.adotarpet.campinas.util.dial
+import com.adotarpet.campinas.ui.components.FormTextField
+import com.adotarpet.campinas.ui.components.SuccessMessage
+import com.adotarpet.campinas.util.Validators
 import com.adotarpet.campinas.ui.theme.CreamCard
 import com.adotarpet.campinas.ui.theme.SalmonBanner
 import com.adotarpet.campinas.ui.theme.Terracotta
@@ -61,8 +71,28 @@ fun RescueScreen(
     var situacaoSelecionada by remember { mutableStateOf(situacaoOptions.first()) }
     var endereco by remember { mutableStateOf("") }
     var cep by remember { mutableStateOf("") }
-    var telefone by remember { mutableStateOf("") }
-    var fotoAnexada by remember { mutableStateOf(false) }
+    val perfil = remember { UserRepository.profile.value }
+    var telefone by remember { mutableStateOf(perfil.phone) }
+    var anexos by remember { mutableStateOf<List<Attachment>>(emptyList()) }
+    var enviado by remember { mutableStateOf(false) }
+
+    if (enviado) {
+        SuccessMessage(
+            title = "Aviso\nenviado",
+            message = "Recebemos o seu aviso de resgate. A equipe vai entrar em contato pelo telefone informado o mais rápido possível. Se o animal corre risco de morte, ligue agora para (19) 3232-0000.",
+            buttonLabel = "Fazer outro aviso",
+            onButtonClick = {
+                animalSelecionado = animalOptions.first()
+                situacaoSelecionada = situacaoOptions.first()
+                endereco = ""
+                cep = ""
+                telefone = UserRepository.profile.value.phone
+                anexos = emptyList()
+                enviado = false
+            }
+        )
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -79,9 +109,13 @@ fun RescueScreen(
         )
 
         Spacer(Modifier.height(20.dp))
+        val context = LocalContext.current
         Card(
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SalmonBanner)
+            colors = CardDefaults.cardColors(containerColor = SalmonBanner),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClickLabel = "Ligar para a ONG") { context.dial(OngInfo.PHONE_DIAL) }
         ) {
             Row(
                 modifier = Modifier.padding(16.dp),
@@ -90,7 +124,7 @@ fun RescueScreen(
                 Icon(Icons.Filled.Phone, contentDescription = null, tint = TerracottaDark)
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    "Risco de morte? Ligue agora: (19) 3232-0000",
+                    "Risco de morte? Toque para ligar agora: ${OngInfo.PHONE_DISPLAY}",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                     fontWeight = FontWeight.SemiBold
@@ -117,55 +151,49 @@ fun RescueScreen(
         }
 
         Spacer(Modifier.height(20.dp))
-        RescueField("Onde está o animal?", "Rua, número, bairro", endereco) { endereco = it }
+        FormTextField("Onde está o animal?", "Rua, número, bairro", endereco) { endereco = it }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            RescueField("CEP", "13000-000", cep, modifier = Modifier.weight(1f)) { cep = it }
-            RescueField("Seu telefone", "(19) 90000-0000", telefone, modifier = Modifier.weight(1f)) { telefone = it }
+            FormTextField(
+                "CEP", "13000-000", cep,
+                modifier = Modifier.weight(1f),
+                keyboardType = KeyboardType.Number,
+                errorText = if (cep.isNotEmpty() && !Validators.isValidCep(cep)) "CEP inválido" else null,
+                visualTransformation = Validators.cepTransformation
+            ) { cep = Validators.onlyCep(it) }
+            FormTextField(
+                "Seu telefone", "(19) 90000-0000", telefone,
+                modifier = Modifier.weight(1f),
+                keyboardType = KeyboardType.Phone,
+                errorText = if (telefone.isNotEmpty() && !Validators.isValidPhone(telefone)) "Telefone inválido" else null,
+                visualTransformation = Validators.phoneTransformation
+        ) { telefone = Validators.onlyPhone(it) }
         }
 
         Spacer(Modifier.height(8.dp))
-        Text("Foto do animal", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = CreamCard),
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { fotoAnexada = !fotoAnexada }
-        ) {
-            Row(
-                modifier = Modifier.padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(44.dp)
-                        .background(White, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(Icons.Filled.AddAPhoto, contentDescription = null, tint = TerracottaDark)
-                }
-                Spacer(Modifier.width(12.dp))
-                Column {
-                    Text(
-                        if (fotoAnexada) "Foto anexada ✓" else "Toque para anexar uma foto",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Text(
-                        "ajuda muito a equipe de resgate",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-                }
-            }
-        }
+        AttachmentPicker(
+            label = "Fotos e vídeo do animal",
+            helperText = "Ajuda muito a equipe de resgate",
+            attachments = anexos,
+            onAttachmentsChange = { anexos = it }
+        )
 
         Spacer(Modifier.height(32.dp))
         Button(
-            onClick = onEnviarResgate,
+            onClick = {
+                UserRepository.fillBlanks(phone = telefone)
+                HistoryRepository.add(
+                    HistoryType.RESGATE,
+                    "$animalSelecionado · $situacaoSelecionada",
+                    endereco.trim()
+                )
+                onEnviarResgate()
+                enviado = true
+            },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = endereco.isNotBlank() && telefone.isNotBlank()
+            enabled = endereco.isNotBlank() && Validators.isValidPhone(telefone) &&
+                (cep.isEmpty() || Validators.isValidCep(cep))
         ) {
             Text("Enviar resgate")
         }
@@ -173,29 +201,3 @@ fun RescueScreen(
     }
 }
 
-@Composable
-private fun RescueField(
-    label: String,
-    placeholder: String,
-    value: String,
-    modifier: Modifier = Modifier,
-    onValueChange: (String) -> Unit
-) {
-    Column(modifier = modifier.padding(bottom = 16.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 6.dp))
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = TextSecondary) },
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedContainerColor = CreamCard,
-                focusedContainerColor = CreamCard,
-                unfocusedBorderColor = CreamCard,
-                focusedBorderColor = Terracotta
-            ),
-            singleLine = true
-        )
-    }
-}

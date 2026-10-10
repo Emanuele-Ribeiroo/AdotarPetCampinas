@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.adotarpet.campinas.data.PetRepository
+import com.adotarpet.campinas.ui.theme.BrandBrown
 import com.adotarpet.campinas.ui.theme.CreamCard
 import com.adotarpet.campinas.ui.theme.SalmonBanner
 import com.adotarpet.campinas.ui.theme.Terracotta
@@ -59,7 +60,7 @@ fun HomeScreen(
         contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         item { HeroSection(onQuemAdotarClick) }
-        item { HighlightCards(onDoarClick) }
+        item { HighlightCards(onDoarClick, onQuemAdotarClick) }
         item { DonationCallout(onDoarClick) }
         item { VolunteersSection() }
         item { BecomeVolunteerBanner(onVoluntarioClick) }
@@ -72,7 +73,7 @@ private fun HeroSection(onQuemAdotarClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .aspectRatio(1.05f)
-            .background(TerracottaDark)
+            .background(BrandBrown)
     ) {
         // Placeholder de imagem de fundo (cão) — troque por Image/AsyncImage real.
         Icon(
@@ -112,7 +113,7 @@ private fun HeroSection(onQuemAdotarClick: () -> Unit) {
 }
 
 @Composable
-private fun HighlightCards(onDoarClick: () -> Unit) {
+private fun HighlightCards(onDoarClick: () -> Unit, onAdotarClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,7 +138,7 @@ private fun HighlightCards(onDoarClick: () -> Unit) {
             title = "Adote",
             description = "Ganhe um companheiro para a vida toda.",
             buttonText = "Saiba mais",
-            onClick = onDoarClick,
+            onClick = onAdotarClick,
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
@@ -281,7 +282,7 @@ private fun BecomeVolunteerBanner(onVoluntarioClick: () -> Unit) {
                 onClick = onVoluntarioClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = TerracottaDark, contentColor = White)
+                colors = ButtonDefaults.buttonColors(containerColor = BrandBrown, contentColor = White)
             ) {
                 Text("Quero ajudar")
             }

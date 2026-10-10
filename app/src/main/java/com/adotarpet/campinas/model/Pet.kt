@@ -16,8 +16,13 @@ data class Pet(
     val state: String = "SP",
     val description: String,
     val photoRes: Int? = null, // reservado para drawable local, se adicionado depois
+    val photoUris: List<String> = emptyList(), // fotos escolhidas na galeria ao cadastrar o animal
     val isFavorite: Boolean = false
 ) {
+    /** Primeira foto, usada nos cards da lista. */
+    val photoUri: String?
+        get() = photoUris.firstOrNull()
+
     val speciesLabel: String
         get() = if (species == PetSpecies.CACHORRO) "Cachorro" else "Gato"
 
@@ -36,4 +41,30 @@ data class Pet(
 data class Volunteer(
     val id: String,
     val name: String
+)
+
+data class UserProfile(
+    val name: String = "",
+    val cpf: String = "",
+    val phone: String = "",
+    val email: String = ""
+) {
+    val isEmpty: Boolean
+        get() = name.isBlank() && cpf.isBlank() && phone.isBlank() && email.isBlank()
+}
+
+enum class HistoryType(val label: String) {
+    ADOCAO("Pedido de adoção"),
+    RESGATE("Aviso de resgate"),
+    DOACAO("Doação"),
+    VOLUNTARIO("Voluntariado"),
+    CADASTRO("Animal cadastrado")
+}
+
+data class HistoryEntry(
+    val id: String,
+    val type: HistoryType,
+    val title: String,
+    val subtitle: String,
+    val timestamp: Long
 )

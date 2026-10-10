@@ -1,5 +1,8 @@
 package com.adotarpet.campinas.ui.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,10 +31,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.ui.theme.CreamCard
 import com.adotarpet.campinas.ui.theme.Terracotta
@@ -40,19 +47,32 @@ import com.adotarpet.campinas.ui.theme.TerracottaLight
 import com.adotarpet.campinas.ui.theme.TextSecondary
 import com.adotarpet.campinas.ui.theme.White
 
-/** Placeholder de foto — substitua por Coil (AsyncImage) quando houver fotos reais. */
+/** Foto do animal (Coil) ou, se não houver, um placeholder com o ícone de patinha. */
 @Composable
-private fun PetPhotoPlaceholder(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier.background(TerracottaLight),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Pets,
-            contentDescription = null,
-            tint = TerracottaDark,
-            modifier = Modifier.size(48.dp)
+fun PetPhoto(
+    pet: Pet,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 48.dp
+) {
+    if (pet.photoUri != null) {
+        AsyncImage(
+            model = pet.photoUri,
+            contentDescription = "Foto de ${pet.name}",
+            contentScale = ContentScale.Crop,
+            modifier = modifier
         )
+    } else {
+        Box(
+            modifier = modifier.background(TerracottaLight),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Pets,
+                contentDescription = null,
+                tint = TerracottaDark.copy(alpha = 0.6f),
+                modifier = Modifier.size(iconSize)
+            )
+        }
     }
 }
 
@@ -76,7 +96,7 @@ fun PetCard(
                     .fillMaxWidth()
                     .aspectRatio(1.15f)
             ) {
-                PetPhotoPlaceholder(modifier = Modifier.fillMaxWidth().aspectRatio(1.15f))
+                PetPhoto(pet, modifier = Modifier.fillMaxWidth().aspectRatio(1.15f))
 
                 IconButton(
                     onClick = onFavoriteClick,
@@ -86,10 +106,16 @@ fun PetCard(
                         .size(40.dp)
                         .background(White, CircleShape)
                 ) {
+                    val heartScale by animateFloatAsState(
+                        targetValue = if (pet.isFavorite) 1.2f else 1f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
+                        label = "heart"
+                    )
                     Icon(
                         imageVector = if (pet.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Favoritar ${pet.name}",
-                        tint = Terracotta
+                        tint = Terracotta,
+                        modifier = Modifier.scale(heartScale)
                     )
                 }
             }

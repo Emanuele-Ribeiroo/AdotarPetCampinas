@@ -38,3 +38,28 @@ app/src/main/java/com/adotarpet/campinas/
 ├── ui/components/          # PetCard, FilterChip, InfoTag, BottomNavBar
 └── ui/screens/              # as 7 telas do fluxo
 ```
+
+## Gerar o APK de release (assinado)
+1. Crie uma chave (guarde o arquivo e as senhas em lugar seguro; sem elas não dá para atualizar o app depois):
+   `keytool -genkeypair -v -keystore adotarpet.jks -alias adotarpet -keyalg RSA -keysize 2048 -validity 10000`
+2. Crie `keystore.properties` na raiz do projeto (já está no `.gitignore`):
+   ```
+   storeFile=adotarpet.jks
+   storePassword=SUA_SENHA
+   keyAlias=adotarpet
+   keyPassword=SUA_SENHA
+   ```
+3. Android Studio: **Build → Generate Signed App Bundle / APK**, ou `gradle :app:assembleRelease`. O APK sai em `app/build/outputs/apk/release/`.
+
+## Dados fictícios para trocar antes de publicar
+- Contatos da ONG (telefone, WhatsApp, e-mail): `util/Actions.kt` (`OngInfo`).
+- Chave PIX: `ui/screens/DonationScreen.kt`.
+- Parceiros: `ui/screens/HelpScreen.kt`.
+
+## Testes
+`gradle :app:testDebugUnitTest` (validações, máscaras, filtros e armazenamento local).
+
+## Perfis e login (mockado)
+- **Usuário**: adota, favorita, avisa resgates, doa e se voluntaria. **Administrador**: além disso, cadastra, edita e exclui animais e vê relatórios.
+- O login é só de demonstração (`data/AuthRepository.kt`): `usuario@adotarpet.com` / `usuario123` e `admin@adotarpet.com` / `admin123`.
+  As senhas ficam dentro do app, então **não protegem nada**. Para publicar, troque `AuthRepository.authenticate` por login real no servidor.

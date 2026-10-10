@@ -26,6 +26,19 @@ sealed class Screen(val route: String) {
     data object Perfil : Screen("perfil")
     data object Resgate : Screen("resgate")
     data object CadastroAnimal : Screen("cadastro-animal")
+    data object Doar : Screen("doar")
+    data object Voluntario : Screen("voluntario")
+    data object EditarAnimal : Screen("editar-animal/{petId}") {
+        fun createRoute(petId: String) = "editar-animal/$petId"
+    }
+    data object Dados : Screen("meus-dados")
+    data object MeusAnimais : Screen("meus-animais")
+    data object Ajuda : Screen("ajuda")
+    data object AdminPainel : Screen("admin")
+    data object Relatorios : Screen("admin-relatorios")
+    data object Historico : Screen("historico/{tipo}") {
+        fun createRoute(tipo: String) = "historico/$tipo"
+    }
 }
 
 /** Itens exibidos na barra de navegação inferior, na mesma ordem do protótipo. */

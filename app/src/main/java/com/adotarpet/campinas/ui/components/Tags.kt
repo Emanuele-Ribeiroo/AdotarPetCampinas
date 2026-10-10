@@ -8,6 +8,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.draw.clip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -62,7 +66,9 @@ fun FilterChip(
             .then(
                 if (!selected) Modifier.border(1.dp, OutlineSoft, shape) else Modifier
             )
-            .clickable { onClick() }
+            .semantics { this.selected = selected }
+            .clickable(role = Role.Button) { onClick() }
+            .minimumInteractiveComponentSize()
             .padding(horizontal = 18.dp, vertical = 10.dp)
     )
 }

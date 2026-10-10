@@ -3,4 +3,11 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@android:color/white</item>
     </style>
+
+    <!-- Tema da splash screen: fundo terracota com a patinha; depois vira Theme.AdotarPet. -->
+    <style name="Theme.AdotarPet.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.AdotarPet</item>
+    </style>
 </resources>
