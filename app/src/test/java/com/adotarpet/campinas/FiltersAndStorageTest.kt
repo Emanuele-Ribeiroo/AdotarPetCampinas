@@ -2,7 +2,12 @@ package com.adotarpet.campinas
 
 import com.adotarpet.campinas.data.HistoryRepository
 import com.adotarpet.campinas.data.PetRepository
+import com.adotarpet.campinas.data.local.entity.PetWithPhotos
+import com.adotarpet.campinas.data.local.entity.toEntity
+import com.adotarpet.campinas.data.local.entity.toModel
+import com.adotarpet.campinas.data.local.entity.toPhotoEntities
 import com.adotarpet.campinas.model.HistoryEntry
+import com.adotarpet.campinas.model.UserProfile
 import com.adotarpet.campinas.model.HistoryType
 import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.model.PetGender
@@ -71,13 +76,22 @@ class FiltersAndStorageTest {
     }
 
     @Test
-    fun animais_sobrevivem_ao_salvar_e_carregar_json() {
-        val original = listOf(
-            pet("a", "Rex").copy(photoUris = listOf("content://foto/1", "content://foto/2")),
-            pet("b", "Nina").copy(photoUris = emptyList(), description = "Com \"aspas\" e acentuação")
-        )
-        val restored = PetRepository.parsePets(PetRepository.toJson(original))
-        assertEquals(original.map { it.copy(isFavorite = false) }, restored)
+    fun animal_sobrevive_ao_converter_para_entidade_do_room() {
+        val original = pet("a", "Rex", favorite = true)
+            .copy(photoUris = listOf("content://foto/1", "content://foto/2", "content://foto/3"))
+        // As fotos vêm do banco fora de ordem; o mapper reordena pela posição.
+        val restored = PetWithPhotos(original.toEntity(), original.toPhotoEntities().reversed()).toModel()
+        assertEquals(original, restored)
+    }
+
+    @Test
+    fun json_atual_importa_varias_fotos() {
+        val salvo = """[{"id":"a","name":"Rex","species":"CACHORRO","gender":"MACHO","age":"2 anos","size":"Porte médio",
+            "neutered":true,"vaccinated":true,"city":"Campinas","state":"SP","description":"Com \"aspas\"",
+            "photoUris":["content://foto/1","content://foto/2"]}]"""
+        val pet = PetRepository.parsePets(salvo).single()
+        assertEquals(listOf("content://foto/1", "content://foto/2"), pet.photoUris)
+        assertEquals("Com \"aspas\"", pet.description)
     }
 
     @Test
@@ -97,12 +111,21 @@ class FiltersAndStorageTest {
     }
 
     @Test
-    fun historico_sobrevive_ao_salvar_e_carregar_json() {
-        val entries = listOf(
-            HistoryEntry("1", HistoryType.ADOCAO, "Adoção de Mel", "Cachorro · 2 anos", 1_700_000_000_000),
-            HistoryEntry("2", HistoryType.DOACAO, "Doação via PIX", "R$ 25", 1_700_000_100_000)
+    fun historico_antigo_em_json_importa() {
+        val antigo = """[{"id":"1","type":"ADOCAO","title":"Adoção de Mel","subtitle":"Cachorro · 2 anos","timestamp":1700000000000}]"""
+        assertEquals(
+            listOf(HistoryEntry("1", HistoryType.ADOCAO, "Adoção de Mel", "Cachorro · 2 anos", 1_700_000_000_000)),
+            HistoryRepository.parse(antigo)
         )
-        assertEquals(entries, HistoryRepository.parse(HistoryRepository.toJson(entries)))
+    }
+
+    @Test
+    fun historico_e_perfil_sobrevivem_ao_converter_para_entidade_do_room() {
+        val entry = HistoryEntry("2", HistoryType.DOACAO, "Doação via PIX", "R$ 25", 1_700_000_100_000)
+        assertEquals(entry, entry.toEntity().toModel())
+
+        val profile = UserProfile("Camila", "123.456.789-00", "(19) 99999-0000", "camila@email.com")
+        assertEquals(profile, profile.toEntity().toModel())
     }
 
 }

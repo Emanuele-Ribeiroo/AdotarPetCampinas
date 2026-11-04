@@ -61,7 +61,7 @@ private val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
 private val DARK_SCRIM = Color.argb(0x80, 0x1b, 0x1b, 0x1b)
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
+    override fun onCreate(savedInstanceState: Bundle?) { //faz a configuração inicial
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {

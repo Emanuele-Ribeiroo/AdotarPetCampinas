@@ -2,20 +2,28 @@ package com.adotarpet.campinas.data
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.room.withTransaction
+import com.adotarpet.campinas.data.local.AppDatabase
+import com.adotarpet.campinas.data.local.dao.PetDao
+import com.adotarpet.campinas.data.local.entity.toEntity
+import com.adotarpet.campinas.data.local.entity.toModel
+import com.adotarpet.campinas.data.local.entity.toPhotoEntities
 import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.model.PetGender
 import com.adotarpet.campinas.model.PetSpecies
 import com.adotarpet.campinas.model.Volunteer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * Fonte de dados mock em memória. Troque por uma chamada de API / Room quando
- * o backend do app estiver definido — a UI já consome tudo via StateFlow,
- * então basta substituir a implementação interna.
+ * Animais guardados no banco Room ([AppDatabase]). A lista em [pets] acompanha o banco
+ * sozinha (o DAO devolve um Flow), então a UI só observa; as gravações rodam em segundo plano.
  */
 object PetRepository : PetDataSource {
 
@@ -70,60 +78,54 @@ object PetRepository : PetDataSource {
         )
     )
 
-    private val _pets = MutableStateFlow(initialPets)
+    private val _pets = MutableStateFlow<List<Pet>>(emptyList())
     override val pets: StateFlow<List<Pet>> = _pets
 
-    private var prefs: SharedPreferences? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var dao: PetDao? = null
 
     /**
-     * Carrega do aparelho os animais cadastrados e os favoritos. Chamado uma vez em
-     * [com.adotarpet.campinas.AdotarPetApplication]; sem isso, tudo fica só em memória.
+     * Abre o banco e começa a observar os animais. Chamado uma vez em
+     * [com.adotarpet.campinas.AdotarPetApplication]. Na primeira execução com Room, copia para o
+     * banco os animais que estavam no formato antigo (SharedPreferences) ou os de exemplo.
      */
     fun init(context: Context) {
-        if (prefs != null) return
-        val p = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs = p
+        if (dao != null) return
+        val db = AppDatabase.get(context)
+        val petDao = db.petDao()
+        dao = petDao
+        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        scope.launch {
+            seedOnce(db, petDao, prefs)
+            petDao.observeAll().collect { list -> _pets.value = list.map { it.toModel() } }
+        }
+    }
 
-        val favoriteIds = p.getStringSet(KEY_FAVORITES, emptySet()).orEmpty()
-        val saved = p.getString(KEY_ALL, null)
+    private suspend fun seedOnce(db: AppDatabase, petDao: PetDao, prefs: SharedPreferences) {
+        if (prefs.getBoolean(KEY_ROOM_SEEDED, false)) return
+        val favoriteIds = prefs.getStringSet(KEY_FAVORITES, emptySet()).orEmpty()
+        val saved = prefs.getString(KEY_ALL, null)
         val base = if (saved != null) {
             runCatching { parsePets(saved) }.getOrDefault(initialPets)
         } else {
-            // Versão antiga: só os animais cadastrados eram guardados, somados aos de exemplo.
-            initialPets + runCatching { parsePets(p.getString(KEY_REGISTERED, null)) }.getOrDefault(emptyList())
+            // Versão bem antiga: só os animais cadastrados eram guardados, somados aos de exemplo.
+            initialPets + runCatching { parsePets(prefs.getString(KEY_REGISTERED, null)) }.getOrDefault(emptyList())
         }
-        _pets.value = base.map { it.copy(isFavorite = it.id in favoriteIds) }
-    }
-
-    private fun persist() {
-        val p = prefs ?: return
-        val all = _pets.value
-        p.edit()
-            .putString(KEY_ALL, toJson(all))
-            .putStringSet(KEY_FAVORITES, all.filter { it.isFavorite }.map { it.id }.toSet())
+        db.withTransaction {
+            base.forEach { pet ->
+                val withFavorite = pet.copy(isFavorite = pet.id in favoriteIds)
+                petDao.savePetWithPhotos(withFavorite.toEntity(), withFavorite.toPhotoEntities())
+            }
+        }
+        prefs.edit()
+            .putBoolean(KEY_ROOM_SEEDED, true)
+            .remove(KEY_ALL)
+            .remove(KEY_REGISTERED)
+            .remove(KEY_FAVORITES)
             .apply()
     }
 
-    internal fun toJson(pets: List<Pet>): String = JSONArray().apply {
-        pets.forEach { pet ->
-            put(
-                JSONObject()
-                    .put("id", pet.id)
-                    .put("name", pet.name)
-                    .put("species", pet.species.name)
-                    .put("gender", pet.gender.name)
-                    .put("age", pet.age)
-                    .put("size", pet.size)
-                    .put("neutered", pet.neutered)
-                    .put("vaccinated", pet.vaccinated)
-                    .put("city", pet.city)
-                    .put("state", pet.state)
-                    .put("description", pet.description)
-                    .put("photoUris", JSONArray(pet.photoUris))
-            )
-        }
-    }.toString()
-
+    /** Lê os animais do formato antigo em JSON; usado só para importar para o Room. */
     internal fun parsePets(json: String?): List<Pet> {
         if (json.isNullOrBlank()) return emptyList()
         val array = JSONArray(json)
@@ -148,8 +150,9 @@ object PetRepository : PetDataSource {
 
     private const val PREFS_NAME = "adotar_pet"
     private const val KEY_REGISTERED = "registered_pets" // formato antigo, só para migrar
-    private const val KEY_ALL = "all_pets"
-    private const val KEY_FAVORITES = "favorite_ids"
+    private const val KEY_ALL = "all_pets"               // formato antigo, só para migrar
+    private const val KEY_FAVORITES = "favorite_ids"     // formato antigo, só para migrar
+    private const val KEY_ROOM_SEEDED = "room_seeded"
 
     val volunteers = listOf(
         Volunteer("1", "João"),
@@ -160,28 +163,20 @@ object PetRepository : PetDataSource {
     override fun petById(id: String): Pet? = _pets.value.find { it.id == id }
 
     /** Adiciona um novo animal cadastrado (ex.: pela tela "Cadastrar animal"). */
-    override fun addPet(pet: Pet) {
-        _pets.update { list -> list + pet }
-        persist()
-    }
+    override fun addPet(pet: Pet) = write { savePetWithPhotos(pet.toEntity(), pet.toPhotoEntities()) }
 
-    override fun toggleFavorite(id: String) {
-        _pets.update { list ->
-            list.map { if (it.id == id) it.copy(isFavorite = !it.isFavorite) else it }
-        }
-        persist()
-    }
+    override fun toggleFavorite(id: String) = write { toggleFavorite(id) }
 
     fun favorites(): List<Pet> = _pets.value.filter { it.isFavorite }
 
-    override fun updatePet(pet: Pet) {
-        _pets.update { list -> list.map { if (it.id == pet.id) pet else it } }
-        persist()
-    }
+    override fun updatePet(pet: Pet) = write { savePetWithPhotos(pet.toEntity(), pet.toPhotoEntities()) }
 
-    override fun deletePet(id: String) {
-        _pets.update { list -> list.filterNot { it.id == id } }
-        persist()
+    override fun deletePet(id: String) = write { deleteById(id) }
+
+    /** Grava em segundo plano; a mudança volta para [pets] pelo Flow do DAO. */
+    private fun write(block: suspend PetDao.() -> Unit) {
+        val petDao = dao ?: return
+        scope.launch { petDao.block() }
     }
 
     private fun parsePhotos(o: JSONObject): List<String> {

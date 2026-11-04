@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -42,6 +44,7 @@ import com.adotarpet.campinas.ui.components.BackButton
 import com.adotarpet.campinas.ui.components.rememberDiscardGuard
 import com.adotarpet.campinas.ui.components.Attachment
 import com.adotarpet.campinas.ui.components.AttachmentPicker
+import com.adotarpet.campinas.ui.components.FilterChip
 import com.adotarpet.campinas.ui.components.FormSectionLabel
 import com.adotarpet.campinas.ui.components.FormTextField
 import com.adotarpet.campinas.ui.theme.CreamCard
@@ -51,6 +54,10 @@ import com.adotarpet.campinas.ui.theme.TerracottaLight
 import com.adotarpet.campinas.ui.theme.TextSecondary
 import com.adotarpet.campinas.ui.theme.White
 
+private val moradiaOptions = listOf("Casa", "Apartamento", "Sítio/Chácara", "Outro")
+private val experienciaOptions = listOf("Primeira vez", "Já tive pets", "Tenho pets")
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun AdoptionFormScreen(
     petId: String,
@@ -68,10 +75,19 @@ fun AdoptionFormScreen(
     var cidade by remember { mutableStateOf(pet.city) }
     var endereco by remember { mutableStateOf("") }
     var anexosCasa by remember { mutableStateOf<List<Attachment>>(emptyList()) }
+    // RF06: perfil do lar e motivação do adotante.
+    var moradia by remember { mutableStateOf<String?>(null) }
+    var temOutrosAnimais by remember { mutableStateOf<Boolean?>(null) }
+    var quaisAnimais by remember { mutableStateOf("") }
+    var experiencia by remember { mutableStateOf<String?>(null) }
+    var rotina by remember { mutableStateOf("") }
+    var motivo by remember { mutableStateOf("") }
 
     val tentarVoltar = rememberDiscardGuard(
         hasChanges = nome != perfil.name || cpf != perfil.cpf || telefone != perfil.phone || email != perfil.email ||
-            cep.isNotBlank() || endereco.isNotBlank() || anexosCasa.isNotEmpty(),
+            cep.isNotBlank() || endereco.isNotBlank() || anexosCasa.isNotEmpty() ||
+            moradia != null || temOutrosAnimais != null || quaisAnimais.isNotBlank() ||
+            experiencia != null || rotina.isNotBlank() || motivo.isNotBlank(),
         onDiscard = onBackClick
     )
 
@@ -79,6 +95,10 @@ fun AdoptionFormScreen(
     val telefoneOk = Validators.isValidPhone(telefone)
     val emailOk = Validators.isValidEmail(email)
     val cepOk = Validators.isValidCep(cep)
+    // "Quais?" só é exigido quando o adotante marca que tem outros animais.
+    val outrosAnimaisOk = temOutrosAnimais == false || (temOutrosAnimais == true && quaisAnimais.isNotBlank())
+    val perfilLarOk = moradia != null && temOutrosAnimais != null && outrosAnimaisOk &&
+        experiencia != null && rotina.isNotBlank() && motivo.isNotBlank()
 
     Column(
         modifier = Modifier
@@ -137,6 +157,48 @@ fun AdoptionFormScreen(
             onAttachmentsChange = { anexosCasa = it }
         )
 
+        Spacer(Modifier.height(16.dp))
+        FormSectionLabel("SOBRE A MORADIA")
+        Text("Tipo de moradia", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            moradiaOptions.forEach { option ->
+                FilterChip(option, selected = moradia == option, onClick = { moradia = option })
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text("Já tem outros animais?", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FilterChip("Sim", selected = temOutrosAnimais == true, onClick = { temOutrosAnimais = true })
+            FilterChip("Não", selected = temOutrosAnimais == false, onClick = {
+                temOutrosAnimais = false
+                quaisAnimais = ""
+            })
+        }
+        if (temOutrosAnimais == true) {
+            Spacer(Modifier.height(12.dp))
+            FormTextField("Quais animais?", "Ex.: 1 cachorro e 2 gatos", quaisAnimais) { quaisAnimais = it }
+        }
+
+        Spacer(Modifier.height(16.dp))
+        Text("Experiência com pets", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            experienciaOptions.forEach { option ->
+                FilterChip(option, selected = experiencia == option, onClick = { experiencia = option })
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+        FormSectionLabel("ROTINA E MOTIVAÇÃO")
+        FormTextField(
+            "Rotina", "Quanto tempo o animal ficará sozinho? Quem vai cuidar dele?", rotina,
+            singleLine = false
+        ) { rotina = it }
+        FormTextField(
+            "Motivo da adoção", "Por que você quer adotar este animal?", motivo,
+            singleLine = false
+        ) { motivo = it }
+
         Spacer(Modifier.height(20.dp))
         Card(
             shape = RoundedCornerShape(16.dp),
@@ -179,7 +241,8 @@ fun AdoptionFormScreen(
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = nome.isNotBlank() && cpfOk && telefoneOk && emailOk && cepOk && endereco.isNotBlank()
+            enabled = nome.isNotBlank() && cpfOk && telefoneOk && emailOk && cepOk && endereco.isNotBlank() &&
+                perfilLarOk
         ) {
             Text("Enviar solicitação")
         }
