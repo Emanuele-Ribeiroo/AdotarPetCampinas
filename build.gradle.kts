@@ -1,6 +1,7 @@
 // Top-level build file
 plugins {
-    id("com.android.application") version "8.13.2" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.24" apply false
-    id("com.google.devtools.ksp") version "1.9.24-1.0.20" // precisa bater com a versão do Kotlin acima apply false
+    id("com.android.application") version "9.3.3" apply false
+    id("org.jetbrains.kotlin.android") version "2.2.10" apply false
+    id("com.google.devtools.ksp") version "2.3.6"
+    id("org.jetbrains.kotlin.plugin.compose") version "2.2.10" apply false // precisa bater com a versão do Kotlin acima apply false
 }
