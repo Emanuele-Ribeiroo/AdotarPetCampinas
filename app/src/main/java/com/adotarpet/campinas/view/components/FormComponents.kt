@@ -34,6 +34,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
+import com.adotarpet.campinas.model.Attachment
 import com.adotarpet.campinas.view.theme.CreamCard
 import com.adotarpet.campinas.view.theme.SurfaceWhite
 import com.adotarpet.campinas.view.theme.Terracotta
@@ -42,7 +43,6 @@ import com.adotarpet.campinas.view.theme.TerracottaLight
 import com.adotarpet.campinas.view.theme.TextSecondary
 import com.adotarpet.campinas.view.theme.White
 
-data class Attachment(val uri: Uri, val name: String)
 
 @Composable
 fun FormSectionLabel(text: String) {

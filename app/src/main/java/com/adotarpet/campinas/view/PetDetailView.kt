@@ -1,6 +1,7 @@
 package com.adotarpet.campinas.view
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -53,7 +54,6 @@ import com.adotarpet.campinas.view.components.TagStyle
 import com.adotarpet.campinas.view.theme.BrandBrown
 import com.adotarpet.campinas.view.theme.CreamBackground
 import com.adotarpet.campinas.view.theme.CreamCard
-import com.adotarpet.campinas.view.theme.SurfaceWhite
 import com.adotarpet.campinas.view.theme.Terracotta
 import com.adotarpet.campinas.view.theme.TerracottaDark
 import com.adotarpet.campinas.view.theme.TextPrimary
@@ -194,14 +194,15 @@ fun PetDetailView(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(SurfaceWhite)
+                .background(CreamBackground)
                 .padding(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedIconButton(
                 onClick = { vm.toggleFavorite(pet.id) },
-                modifier = Modifier.size(52.dp)
+                modifier = Modifier.size(52.dp),
+                border = BorderStroke(1.dp, Terracotta)
             ) {
                 Icon(
                     imageVector = if (pet.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,

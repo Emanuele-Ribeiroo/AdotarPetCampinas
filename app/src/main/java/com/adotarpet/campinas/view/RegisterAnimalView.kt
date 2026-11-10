@@ -1,6 +1,5 @@
 package com.adotarpet.campinas.view
 
-import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,19 +16,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adotarpet.campinas.viewmodel.RegisterAnimalViewModel
-import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.model.PetGender
 import com.adotarpet.campinas.model.PetSpecies
-import com.adotarpet.campinas.view.components.Attachment
 import com.adotarpet.campinas.view.components.AttachmentPicker
 import com.adotarpet.campinas.view.components.BackButton
 import com.adotarpet.campinas.view.components.FilterChip
@@ -40,7 +33,6 @@ import com.adotarpet.campinas.view.theme.Terracotta
 import com.adotarpet.campinas.view.theme.TerracottaDark
 import com.adotarpet.campinas.view.theme.TextSecondary
 import com.adotarpet.campinas.view.theme.White
-import java.util.UUID
 
 @Composable
 fun RegisterAnimalView(
@@ -49,29 +41,11 @@ fun RegisterAnimalView(
     onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
-    val vm: RegisterAnimalViewModel = viewModel()
-    val existing = remember(petId) { petId?.let { vm.petById(it) } }
-    val editando = existing != null
+    // Estado e regras ficam no ViewModel; a tela só desenha e dispara eventos.
+    val vm: RegisterAnimalViewModel = viewModel { RegisterAnimalViewModel(petId) }
+    val editando = vm.editando
 
-    var nome by remember { mutableStateOf(existing?.name.orEmpty()) }
-    var especie by remember { mutableStateOf(existing?.species ?: PetSpecies.CACHORRO) }
-    var genero by remember { mutableStateOf(existing?.gender ?: PetGender.MACHO) }
-    var idade by remember { mutableStateOf(existing?.age.orEmpty()) }
-    var porte by remember { mutableStateOf(existing?.size.orEmpty()) }
-    var castrado by remember { mutableStateOf(existing?.neutered ?: false) }
-    var vacinado by remember { mutableStateOf(existing?.vaccinated ?: false) }
-    var descricao by remember { mutableStateOf(existing?.description.orEmpty()) }
-    var anexos by remember {
-        mutableStateOf(existing?.photoUris.orEmpty().mapIndexed { i, uri -> Attachment(Uri.parse(uri), "Foto ${i + 1}") })
-    }
-
-    val tentarVoltar = rememberDiscardGuard(
-        hasChanges = !editando && (
-            nome.isNotBlank() || idade.isNotBlank() || porte.isNotBlank() ||
-                descricao.isNotBlank() || castrado || vacinado || anexos.isNotEmpty()
-            ),
-        onDiscard = onBackClick
-    )
+    val tentarVoltar = rememberDiscardGuard(hasChanges = vm.temAlteracoes, onDiscard = onBackClick)
 
     Column(
         modifier = Modifier
@@ -94,85 +68,51 @@ fun RegisterAnimalView(
 
         Spacer(Modifier.height(24.dp))
         FormSectionLabel("SOBRE O ANIMAL")
-        FormTextField("Nome", "Como ele se chama?", nome) { nome = it }
+        FormTextField("Nome", "Como ele se chama?", vm.nome) { vm.nome = it }
 
         Text("Espécie", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-            FilterChip("Cachorro", especie == PetSpecies.CACHORRO, { especie = PetSpecies.CACHORRO })
-            FilterChip("Gato", especie == PetSpecies.GATO, { especie = PetSpecies.GATO })
+            FilterChip("Cachorro", vm.especie == PetSpecies.CACHORRO, { vm.especie = PetSpecies.CACHORRO })
+            FilterChip("Gato", vm.especie == PetSpecies.GATO, { vm.especie = PetSpecies.GATO })
         }
 
         Text("Sexo", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-            FilterChip("Macho", genero == PetGender.MACHO, { genero = PetGender.MACHO })
-            FilterChip("Fêmea", genero == PetGender.FEMEA, { genero = PetGender.FEMEA })
+            FilterChip("Macho", vm.genero == PetGender.MACHO, { vm.genero = PetGender.MACHO })
+            FilterChip("Fêmea", vm.genero == PetGender.FEMEA, { vm.genero = PetGender.FEMEA })
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            FormTextField("Idade", "2 anos", idade, modifier = Modifier.weight(1f)) { idade = it }
-            FormTextField("Porte", "Médio", porte, modifier = Modifier.weight(1f)) { porte = it }
+            FormTextField("Idade", "2 anos", vm.idade, modifier = Modifier.weight(1f)) { vm.idade = it }
+            FormTextField("Porte", "Médio", vm.porte, modifier = Modifier.weight(1f)) { vm.porte = it }
         }
 
         Text("Saúde", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-            FilterChip("Castrado", castrado, { castrado = !castrado })
-            FilterChip("Vacinado", vacinado, { vacinado = !vacinado })
+            FilterChip("Castrado", vm.castrado, { vm.castrado = !vm.castrado })
+            FilterChip("Vacinado", vm.vacinado, { vm.vacinado = !vm.vacinado })
         }
 
-        FormTextField("Descrição", "Conte um pouco sobre ele", descricao, singleLine = false) { descricao = it }
+        FormTextField("Descrição", "Conte um pouco sobre ele", vm.descricao, singleLine = false) { vm.descricao = it }
 
         AttachmentPicker(
             label = "Fotos e vídeo do animal",
             helperText = "A primeira foto aparece na lista; as outras ficam na galeria do animal",
-            attachments = anexos,
-            onAttachmentsChange = { anexos = it }
+            attachments = vm.anexos,
+            onAttachmentsChange = { vm.anexos = it }
         )
 
         Spacer(Modifier.height(28.dp))
         Button(
             onClick = {
-                val fotosAntigas = existing?.photoUris.orEmpty()
-
-                val fotos = anexos.filter { anexo ->
-                    anexo.uri.toString() in fotosAntigas ||
-                        context.contentResolver.getType(anexo.uri)?.startsWith("image/") == true
-                }.map { it.uri.toString() }
-
-                if (existing != null) {
-                    vm.atualizar(
-                        existing.copy(
-                            name = nome.trim(),
-                            species = especie,
-                            gender = genero,
-                            age = idade.trim().ifBlank { "Idade não informada" },
-                            size = porte.trim().ifBlank { "Porte não informado" },
-                            neutered = castrado,
-                            vaccinated = vacinado,
-                            description = descricao.trim(),
-                            photoUris = fotos
-                        )
-                    )
-                } else {
-                    val novo = Pet(
-                        id = UUID.randomUUID().toString(),
-                        name = nome.trim(),
-                        species = especie,
-                        gender = genero,
-                        age = idade.trim().ifBlank { "Idade não informada" },
-                        size = porte.trim().ifBlank { "Porte não informado" },
-                        neutered = castrado,
-                        vaccinated = vacinado,
-                        description = descricao.trim(),
-                        photoUris = fotos
-                    )
-                    vm.salvarNovo(novo)
-                }
+                // Só o Android sabe dizer se o arquivo escolhido é imagem ou vídeo.
+                vm.salvar(ehImagem = { uri -> context.contentResolver.getType(uri)?.startsWith("image/") == true })
                 onSaved(editando)
             },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = nome.isNotBlank()
+            enabled = vm.podeSalvar
         ) {
             Text(if (editando) "Salvar alterações" else "Cadastrar animal")
         }

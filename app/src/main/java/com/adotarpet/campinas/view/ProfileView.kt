@@ -231,18 +231,22 @@ fun ProfileView(
                 }
             }
             Spacer(Modifier.height(28.dp))
+            // Sem e-mail de conta = entrou como visitante.
+            val visitante = accountEmail.isBlank()
             Text(
-                "CONTA CONECTADA",
+                if (visitante) "VISITANTE" else "CONTA CONECTADA",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 modifier = Modifier.padding(bottom = 12.dp)
             )
-            if (accountEmail.isNotBlank()) {
-                Text(accountEmail, style = MaterialTheme.typography.bodyMedium, color = TerracottaDark)
-            }
+            Text(
+                if (visitante) "Você está usando o app sem conta." else accountEmail,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TerracottaDark
+            )
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = vm::logout, shape = RoundedCornerShape(50)) {
-                Text("Sair da conta", color = TerracottaDark)
+                Text(if (visitante) "Fazer login" else "Sair da conta", color = TerracottaDark)
             }
 
             Spacer(Modifier.height(28.dp))

@@ -30,11 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -42,9 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.adotarpet.campinas.repository.CepResultado
 import com.adotarpet.campinas.viewmodel.RescueViewModel
-import com.adotarpet.campinas.view.components.Attachment
 import com.adotarpet.campinas.view.components.AttachmentPicker
 import com.adotarpet.campinas.view.components.FilterChip
 import com.adotarpet.campinas.util.OngInfo
@@ -60,58 +53,20 @@ import com.adotarpet.campinas.view.theme.TextPrimary
 import com.adotarpet.campinas.view.theme.TextSecondary
 import com.adotarpet.campinas.view.theme.White
 
-private val animalOptions = listOf("Cão", "Gato", "Outro")
-private val situacaoOptions = listOf("Ferido", "Abandonado", "Maus-tratos", "Preso")
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RescueView(
     onEnviarResgate: () -> Unit
 ) {
-    var animalSelecionado by remember { mutableStateOf(animalOptions.first()) }
-    var situacaoSelecionada by remember { mutableStateOf(situacaoOptions.first()) }
-    var endereco by remember { mutableStateOf("") }
-    var cep by remember { mutableStateOf("") }
+    // Estado e regras ficam no ViewModel; a tela só desenha e dispara eventos.
     val vm: RescueViewModel = viewModel()
-    var telefone by remember { mutableStateOf(vm.telefoneSalvo) }
-    var anexos by remember { mutableStateOf<List<Attachment>>(emptyList()) }
-    var enviado by remember { mutableStateOf(false) }
-    var cepBuscando by remember { mutableStateOf(false) }
-    var cepApiInvalido by remember { mutableStateOf(false) }
 
-    LaunchedEffect(cep) {
-        cepApiInvalido = false
-        if (cep.length == 8) {
-            cepBuscando = true
-            when (val r = vm.buscarCep(cep)) {
-                is CepResultado.Encontrado -> {
-                    if (endereco.isBlank()) {
-                        endereco = listOf(r.endereco.logradouro, r.endereco.bairro, r.endereco.cidade)
-                            .filter { it.isNotBlank() }
-                            .joinToString(", ")
-                    }
-                }
-                CepResultado.Invalido -> cepApiInvalido = true
-                CepResultado.ErroRede -> {}
-            }
-            cepBuscando = false
-        }
-    }
-
-    if (enviado) {
+    if (vm.enviado) {
         SuccessMessage(
             title = "Aviso\nenviado",
             message = "Recebemos o seu aviso de resgate. A equipe vai entrar em contato pelo telefone informado o mais rápido possível. Se o animal corre risco de morte, ligue agora para (19) 3232-0000.",
             buttonLabel = "Fazer outro aviso",
-            onButtonClick = {
-                animalSelecionado = animalOptions.first()
-                situacaoSelecionada = situacaoOptions.first()
-                endereco = ""
-                cep = ""
-                telefone = vm.telefoneSalvo
-                anexos = emptyList()
-                enviado = false
-            }
+            onButtonClick = vm::novoAviso
         )
         return
     }
@@ -157,8 +112,8 @@ fun RescueView(
         Spacer(Modifier.height(24.dp))
         Text("Qual animal?", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(bottom = 10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            animalOptions.forEach { option ->
-                FilterChip(option, selected = animalSelecionado == option, onClick = { animalSelecionado = option })
+            vm.animalOptions.forEach { option ->
+                FilterChip(option, selected = vm.animalSelecionado == option, onClick = { vm.animalSelecionado = option })
             }
         }
 
@@ -167,54 +122,48 @@ fun RescueView(
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            situacaoOptions.forEach { option ->
-                FilterChip(option, selected = situacaoSelecionada == option, onClick = { situacaoSelecionada = option })
+            vm.situacaoOptions.forEach { option ->
+                FilterChip(option, selected = vm.situacaoSelecionada == option, onClick = { vm.situacaoSelecionada = option })
             }
         }
 
         Spacer(Modifier.height(20.dp))
-        FormTextField("Onde está o animal?", "Rua, número, bairro", endereco) { endereco = it }
+        FormTextField("Onde está o animal?", "Rua, número, bairro", vm.endereco) { vm.endereco = it }
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             FormTextField(
-                "CEP", "13000-000", cep,
+                "CEP", "13000-000", vm.cep,
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Number,
-                errorText = when {
-                    cepBuscando -> null
-                    cep.isNotEmpty() && (!Validators.isValidCep(cep) || cepApiInvalido) -> "CEP inválido"
-                    else -> null
-                },
+                errorText = if (!vm.cepBuscando && vm.cepInvalido) "CEP inválido" else null,
                 visualTransformation = Validators.cepTransformation
-            ) { cep = Validators.onlyCep(it) }
+            ) { vm.onCepChange(it) }
             FormTextField(
-                "Seu telefone", "(19) 90000-0000", telefone,
+                "Seu telefone", "(19) 90000-0000", vm.telefone,
                 modifier = Modifier.weight(1f),
                 keyboardType = KeyboardType.Phone,
-                errorText = if (telefone.isNotEmpty() && !Validators.isValidPhone(telefone)) "Telefone inválido" else null,
+                errorText = if (vm.telefone.isNotEmpty() && !vm.telefoneOk) "Telefone inválido" else null,
                 visualTransformation = Validators.phoneTransformation
-        ) { telefone = Validators.onlyPhone(it) }
+            ) { vm.onTelefoneChange(it) }
         }
 
         Spacer(Modifier.height(8.dp))
         AttachmentPicker(
             label = "Fotos e vídeo do animal",
             helperText = "Ajuda muito a equipe de resgate",
-            attachments = anexos,
-            onAttachmentsChange = { anexos = it }
+            attachments = vm.anexos,
+            onAttachmentsChange = { vm.anexos = it }
         )
 
         Spacer(Modifier.height(32.dp))
         Button(
             onClick = {
-                vm.enviarResgate(animalSelecionado, situacaoSelecionada, endereco, telefone)
+                vm.enviarResgate()
                 onEnviarResgate()
-                enviado = true
             },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = endereco.isNotBlank() && Validators.isValidPhone(telefone) &&
-                (cep.isEmpty() || (Validators.isValidCep(cep) && !cepApiInvalido))
+            enabled = vm.podeEnviar
         ) {
             Text("Enviar resgate")
         }

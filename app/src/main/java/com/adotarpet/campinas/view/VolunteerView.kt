@@ -17,10 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -38,40 +34,23 @@ import com.adotarpet.campinas.view.theme.TextSecondary
 import com.adotarpet.campinas.view.theme.White
 import com.adotarpet.campinas.util.Validators
 
-private val areas = listOf("Lar temporário", "Passeios", "Eventos de adoção", "Transporte", "Divulgação", "Veterinária")
-private val disponibilidades = listOf("Dias úteis", "Fins de semana", "Qualquer dia")
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun VolunteerView(onVoltarClick: () -> Unit, onBackClick: () -> Unit) {
+    // Estado e regras ficam no ViewModel; a tela só desenha e dispara eventos.
     val vm: VolunteerViewModel = viewModel()
-    val perfil = remember { vm.perfil }
-    var nome by remember { mutableStateOf(perfil.name) }
-    var telefone by remember { mutableStateOf(perfil.phone) }
-    var email by remember { mutableStateOf(perfil.email) }
-    var areasSelecionadas by remember { mutableStateOf(setOf<String>()) }
-    var disponibilidade by remember { mutableStateOf(disponibilidades.first()) }
-    var mensagem by remember { mutableStateOf("") }
-    var enviado by remember { mutableStateOf(false) }
 
-    val tentarVoltar = rememberDiscardGuard(
-        hasChanges = !enviado && (nome != perfil.name || telefone != perfil.phone || email != perfil.email ||
-            areasSelecionadas.isNotEmpty() || mensagem.isNotBlank()),
-        onDiscard = onBackClick
-    )
+    val tentarVoltar = rememberDiscardGuard(hasChanges = vm.temAlteracoes, onDiscard = onBackClick)
 
-    if (enviado) {
+    if (vm.enviado) {
         SuccessMessage(
             title = "Obrigado por\nse voluntariar",
-            message = "Recebemos seu cadastro, $nome. Nossa equipe vai entrar em contato pelo WhatsApp para combinar os próximos passos.",
+            message = "Recebemos seu cadastro, ${vm.nome}. Nossa equipe vai entrar em contato pelo WhatsApp para combinar os próximos passos.",
             buttonLabel = "Voltar ao início",
             onButtonClick = onVoltarClick
         )
         return
     }
-
-    val telefoneOk = Validators.isValidPhone(telefone)
-    val emailOk = Validators.isValidEmail(email)
 
     Column(
         modifier = Modifier
@@ -86,18 +65,18 @@ fun VolunteerView(onVoltarClick: () -> Unit, onBackClick: () -> Unit) {
 
         Spacer(Modifier.height(24.dp))
         FormSectionLabel("SEUS DADOS")
-        FormTextField("Nome completo", "Como você se chama?", nome) { nome = it }
+        FormTextField("Nome completo", "Como você se chama?", vm.nome) { vm.nome = it }
         FormTextField(
-            "Telefone / WhatsApp", "(19) 90000-0000", telefone,
+            "Telefone / WhatsApp", "(19) 90000-0000", vm.telefone,
             keyboardType = KeyboardType.Phone,
-            errorText = if (telefone.isNotEmpty() && !telefoneOk) "Telefone inválido" else null,
+            errorText = if (vm.telefone.isNotEmpty() && !vm.telefoneOk) "Telefone inválido" else null,
             visualTransformation = Validators.phoneTransformation
-        ) { telefone = Validators.onlyPhone(it) }
+        ) { vm.onTelefoneChange(it) }
         FormTextField(
-            "E-mail", "voce@email.com", email,
+            "E-mail", "voce@email.com", vm.email,
             keyboardType = KeyboardType.Email,
-            errorText = if (email.isNotEmpty() && !emailOk) "E-mail inválido" else null
-        ) { email = it.trim() }
+            errorText = if (vm.email.isNotEmpty() && !vm.emailOk) "E-mail inválido" else null
+        ) { vm.onEmailChange(it) }
 
         Spacer(Modifier.height(8.dp))
         FormSectionLabel("COMO QUER AJUDAR? (ESCOLHA UMA OU MAIS)")
@@ -106,10 +85,8 @@ fun VolunteerView(onVoltarClick: () -> Unit, onBackClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(bottom = 20.dp)
         ) {
-            areas.forEach { area ->
-                FilterChip(area, area in areasSelecionadas, {
-                    areasSelecionadas = if (area in areasSelecionadas) areasSelecionadas - area else areasSelecionadas + area
-                })
+            vm.areas.forEach { area ->
+                FilterChip(area, area in vm.areasSelecionadas, { vm.alternarArea(area) })
             }
         }
 
@@ -118,26 +95,23 @@ fun VolunteerView(onVoltarClick: () -> Unit, onBackClick: () -> Unit) {
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.padding(bottom = 20.dp)
         ) {
-            disponibilidades.forEach { op ->
-                FilterChip(op, disponibilidade == op, { disponibilidade = op })
+            vm.disponibilidades.forEach { op ->
+                FilterChip(op, vm.disponibilidade == op, { vm.disponibilidade = op })
             }
         }
 
         FormTextField(
-            "Quer contar algo mais?", "Experiência, horários, dúvidas…", mensagem,
+            "Quer contar algo mais?", "Experiência, horários, dúvidas…", vm.mensagem,
             singleLine = false
-        ) { mensagem = it }
+        ) { vm.mensagem = it }
 
         Spacer(Modifier.height(12.dp))
         Button(
-            onClick = {
-                vm.enviarCadastro(nome.trim(), telefone, email, areasSelecionadas.sorted().joinToString(", "))
-                enviado = true
-            },
+            onClick = vm::enviarCadastro,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = nome.isNotBlank() && telefoneOk && emailOk && areasSelecionadas.isNotEmpty()
+            enabled = vm.podeEnviar
         ) {
             Text("Quero ser voluntário")
         }

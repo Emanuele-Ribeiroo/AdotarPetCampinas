@@ -3,7 +3,7 @@ package com.adotarpet.campinas.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.adotarpet.campinas.model.HistoryEntry
-import com.adotarpet.campinas.repository.AdoptionApiService
+import com.adotarpet.campinas.repository.AdoptionRepository
 import com.adotarpet.campinas.repository.HistoryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -50,7 +50,7 @@ class RequestDetailViewModel : ViewModel() {
                 put("status", "Cancelada")
                 put("motivoCancelamento", motivo)
             }
-            _cancelState.value = AdoptionApiService.enviarFormulario(dados).fold(
+            _cancelState.value = AdoptionRepository.enviarFormulario(dados).fold(
                 onSuccess = { CancelState.Concluido },
                 onFailure = { CancelState.Erro(it.message ?: "Falha ao enviar para a planilha") }
             )

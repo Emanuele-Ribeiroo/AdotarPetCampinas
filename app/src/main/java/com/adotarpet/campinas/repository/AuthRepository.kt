@@ -17,5 +17,8 @@ object AuthRepository {
         return true
     }
 
-    fun logout() = SettingsRepository.signOut()
+    /** Entra sem conta: usuário comum, sem e-mail associado. */
+    fun loginAsGuest() = SettingsRepository.signIn(UserRole.USER, "")
+
+    fun logout()= SettingsRepository.signOut()
 }

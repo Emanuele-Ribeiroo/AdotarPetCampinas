@@ -14,16 +14,11 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.adotarpet.campinas.viewmodel.MyDataViewModel
-import com.adotarpet.campinas.model.UserProfile
 import com.adotarpet.campinas.view.components.BackButton
 import com.adotarpet.campinas.view.components.FormSectionLabel
 import com.adotarpet.campinas.view.components.FormTextField
@@ -36,19 +31,10 @@ import com.adotarpet.campinas.util.Validators
 
 @Composable
 fun MyDataView(onSaved: () -> Unit, onBackClick: () -> Unit) {
+    // Estado e regras ficam no ViewModel; a tela só desenha e dispara eventos.
     val vm: MyDataViewModel = viewModel()
-    val saved = remember { vm.perfil }
-    var nome by remember { mutableStateOf(saved.name) }
-    var cpf by remember { mutableStateOf(saved.cpf) }
-    var telefone by remember { mutableStateOf(saved.phone) }
-    var email by remember { mutableStateOf(saved.email) }
 
-    val cpfOk = cpf.isEmpty() || Validators.isValidCpf(cpf)
-    val telefoneOk = telefone.isEmpty() || Validators.isValidPhone(telefone)
-    val emailOk = email.isEmpty() || Validators.isValidEmail(email)
-    val changed = nome != saved.name || cpf != saved.cpf || telefone != saved.phone || email != saved.email
-
-    val tentarVoltar = rememberDiscardGuard(hasChanges = changed, onDiscard = onBackClick)
+    val tentarVoltar = rememberDiscardGuard(hasChanges = vm.temAlteracoes, onDiscard = onBackClick)
 
     Column(
         modifier = Modifier
@@ -69,38 +55,38 @@ fun MyDataView(onSaved: () -> Unit, onBackClick: () -> Unit) {
 
         Spacer(Modifier.height(24.dp))
         FormSectionLabel("DADOS PESSOAIS")
-        FormTextField("Nome completo", "Como você se chama?", nome) { nome = it }
+        FormTextField("Nome completo", "Como você se chama?", vm.nome) { vm.nome = it }
         FormTextField(
-            "CPF", "000.000.000-00", cpf,
+            "CPF", "000.000.000-00", vm.cpf,
             keyboardType = KeyboardType.Number,
-            errorText = if (!cpfOk) "CPF inválido" else null,
+            errorText = if (!vm.cpfOk) "CPF inválido" else null,
             visualTransformation = Validators.cpfTransformation
-        ) { cpf = Validators.onlyCpf(it) }
+        ) { vm.onCpfChange(it) }
 
         Spacer(Modifier.height(8.dp))
         FormSectionLabel("CONTATO")
         FormTextField(
-            "Telefone / WhatsApp", "(19) 90000-0000", telefone,
+            "Telefone / WhatsApp", "(19) 90000-0000", vm.telefone,
             keyboardType = KeyboardType.Phone,
-            errorText = if (!telefoneOk) "Telefone inválido" else null,
+            errorText = if (!vm.telefoneOk) "Telefone inválido" else null,
             visualTransformation = Validators.phoneTransformation
-        ) { telefone = Validators.onlyPhone(it) }
+        ) { vm.onTelefoneChange(it) }
         FormTextField(
-            "E-mail", "voce@email.com", email,
+            "E-mail", "voce@email.com", vm.email,
             keyboardType = KeyboardType.Email,
-            errorText = if (!emailOk) "E-mail inválido" else null
-        ) { email = it.trim() }
+            errorText = if (!vm.emailOk) "E-mail inválido" else null
+        ) { vm.onEmailChange(it) }
 
         Spacer(Modifier.height(20.dp))
         Button(
             onClick = {
-                vm.salvar(UserProfile(nome.trim(), cpf, telefone, email))
+                vm.salvar()
                 onSaved()
             },
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(50),
             colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-            enabled = changed && cpfOk && telefoneOk && emailOk
+            enabled = vm.podeSalvar
         ) {
             Text("Salvar")
         }

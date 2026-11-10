@@ -87,6 +87,14 @@ dependencies {
 
     // ViewModel + Compose
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+
+    // Coroutines (processamento assíncrono)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // Retrofit + Gson (chamadas HTTP e conversão de JSON)
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
 
     // Coil (carregar imagens de URL no futuro)
     implementation("io.coil-kt:coil-compose:2.6.0")

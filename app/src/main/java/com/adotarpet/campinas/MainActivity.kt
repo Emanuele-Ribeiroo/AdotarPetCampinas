@@ -9,7 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
-import com.adotarpet.campinas.repository.SettingsRepository
 import com.adotarpet.campinas.repository.ThemeMode
 import com.adotarpet.campinas.repository.UserRole
 import androidx.compose.runtime.LaunchedEffect
@@ -42,7 +41,6 @@ import com.adotarpet.campinas.view.AdoptionFormView
 import com.adotarpet.campinas.view.AdotarView
 import com.adotarpet.campinas.view.ConfirmationView
 import com.adotarpet.campinas.view.DonationView
-import com.adotarpet.campinas.repository.UserRepository
 import com.adotarpet.campinas.view.HelpView
 import com.adotarpet.campinas.view.LoginView
 import com.adotarpet.campinas.view.HistoryView
@@ -56,6 +54,8 @@ import com.adotarpet.campinas.view.RegisterAnimalView
 import com.adotarpet.campinas.view.RescueView
 import com.adotarpet.campinas.view.VolunteerView
 import com.adotarpet.campinas.view.theme.AdotarPetTheme
+import com.adotarpet.campinas.viewmodel.MainViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 
 private val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
@@ -66,7 +66,8 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         setContent {
-            val mode by SettingsRepository.themeMode.collectAsState()
+            val mainViewModel: MainViewModel = viewModel()
+            val mode by mainViewModel.themeMode.collectAsState()
             val darkTheme = when (mode) {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
@@ -88,14 +89,12 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AdotarPetApp() {
-    val loggedIn by SettingsRepository.loggedIn.collectAsState()
+    val mainViewModel: MainViewModel = viewModel()
+    val loggedIn by mainViewModel.loggedIn.collectAsState()
     if (loggedIn) {
-
         AdotarPetMain()
     } else {
-        LoginView(
-            onLoggedIn = { UserRepository.fillBlanks(email = SettingsRepository.accountEmail.value) }
-        )
+        LoginView()
     }
 }
 
@@ -105,7 +104,8 @@ private fun AdotarPetMain() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    val role by SettingsRepository.role.collectAsState()
+    val mainViewModel: MainViewModel = viewModel()
+    val role by mainViewModel.role.collectAsState()
     val isAdmin = role == UserRole.ADMIN
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()

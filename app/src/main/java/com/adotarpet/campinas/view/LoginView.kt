@@ -26,13 +26,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -56,16 +53,9 @@ import com.adotarpet.campinas.view.theme.TextSecondary
 import com.adotarpet.campinas.view.theme.White
 
 @Composable
-fun LoginView(onLoggedIn: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var senha by remember { mutableStateOf("") }
-    var mostrarSenha by remember { mutableStateOf(false) }
-    var erro by remember { mutableStateOf(false) }
+fun LoginView() {
+    // Estado e regras ficam no ViewModel; a tela só desenha e dispara eventos.
     val vm: LoginViewModel = viewModel()
-
-    val tentarEntrar = {
-        if (vm.login(email, senha)) onLoggedIn() else erro = true
-    }
 
     Box(
         modifier = Modifier
@@ -91,39 +81,49 @@ fun LoginView(onLoggedIn: () -> Unit) {
 
             Spacer(Modifier.height(32.dp))
             FormTextField(
-                "E-mail", "voce@email.com", email,
+                "E-mail", "voce@email.com", vm.email,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardType = KeyboardType.Email
-            ) {
-                email = it.trim()
-                erro = false
-            }
+            ) { vm.onEmailChange(it) }
             FormTextField(
-                "Senha", "Digite sua senha", senha,
+                "Senha", "Digite sua senha", vm.senha,
                 modifier = Modifier.fillMaxWidth(),
                 keyboardType = KeyboardType.Password,
-                errorText = if (erro) "E-mail ou senha incorretos" else null,
-                visualTransformation = if (mostrarSenha) VisualTransformation.None else PasswordVisualTransformation()
-            ) {
-                senha = it
-                erro = false
-            }
+                errorText = if (vm.erro) "E-mail ou senha incorretos" else null,
+                visualTransformation = if (vm.mostrarSenha) VisualTransformation.None else PasswordVisualTransformation()
+            ) { vm.onSenhaChange(it) }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End) {
-                TextButton(onClick = { mostrarSenha = !mostrarSenha }) {
-                    Text(if (mostrarSenha) "Ocultar senha" else "Mostrar senha", color = Terracotta)
+                TextButton(onClick = vm::alternarMostrarSenha) {
+                    Text(if (vm.mostrarSenha) "Ocultar senha" else "Mostrar senha", color = Terracotta)
                 }
             }
 
             Spacer(Modifier.height(8.dp))
             Button(
-                onClick = tentarEntrar,
+                onClick = vm::entrar,
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(containerColor = Terracotta, contentColor = White),
-                enabled = email.isNotBlank() && senha.isNotBlank()
+                enabled = vm.podeEntrar
             ) {
                 Text("Entrar")
             }
+
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = vm::entrarComoVisitante,
+                modifier = Modifier.fillMaxWidth().height(52.dp),
+                shape = RoundedCornerShape(50)
+            ) {
+                Text("Entrar como visitante", color = TerracottaDark)
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Você pode ver os animais e enviar pedidos sem criar conta.",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }
