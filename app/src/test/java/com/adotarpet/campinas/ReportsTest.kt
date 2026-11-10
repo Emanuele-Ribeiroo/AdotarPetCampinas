@@ -1,8 +1,8 @@
 package com.adotarpet.campinas
 
-import com.adotarpet.campinas.data.AuthRepository
-import com.adotarpet.campinas.data.SettingsRepository
-import com.adotarpet.campinas.data.UserRole
+import com.adotarpet.campinas.repository.AuthRepository
+import com.adotarpet.campinas.repository.SettingsRepository
+import com.adotarpet.campinas.repository.UserRole
 import com.adotarpet.campinas.model.HistoryEntry
 import com.adotarpet.campinas.model.HistoryType
 import com.adotarpet.campinas.model.Pet

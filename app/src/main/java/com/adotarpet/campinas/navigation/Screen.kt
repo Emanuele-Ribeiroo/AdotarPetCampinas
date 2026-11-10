@@ -39,9 +39,11 @@ sealed class Screen(val route: String) {
     data object Historico : Screen("historico/{tipo}") {
         fun createRoute(tipo: String) = "historico/$tipo"
     }
+    data object SolicitacaoDetalhe : Screen("solicitacao/{id}") {
+        fun createRoute(id: String) = "solicitacao/$id"
+    }
 }
 
-/** Itens exibidos na barra de navegação inferior, na mesma ordem do protótipo. */
 data class BottomNavItem(
     val screen: Screen,
     val label: String,

@@ -5,10 +5,6 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 
-/**
- * Mostra os dígitos digitados com máscara (CPF, telefone, CEP) sem alterar o texto guardado.
- * Como o cursor é mapeado entre o texto cru e o formatado, digitar não "embaralha" mais o número.
- */
 class MaskTransformation(private val format: (String) -> String) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
         val formatted = format(text.text)

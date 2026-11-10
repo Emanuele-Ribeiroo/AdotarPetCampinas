@@ -9,12 +9,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
-import com.adotarpet.campinas.data.SettingsRepository
-import com.adotarpet.campinas.data.ThemeMode
-import com.adotarpet.campinas.data.UserRole
+import com.adotarpet.campinas.repository.SettingsRepository
+import com.adotarpet.campinas.repository.ThemeMode
+import com.adotarpet.campinas.repository.UserRole
 import androidx.compose.runtime.LaunchedEffect
-import com.adotarpet.campinas.ui.screens.AdminPanelScreen
-import com.adotarpet.campinas.ui.screens.AdminReportsScreen
+import com.adotarpet.campinas.view.AdminPanelView
+import com.adotarpet.campinas.view.AdminReportsView
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -37,24 +37,25 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.adotarpet.campinas.navigation.Screen
-import com.adotarpet.campinas.ui.components.AdotarPetBottomBar
-import com.adotarpet.campinas.ui.screens.AdoptionFormScreen
-import com.adotarpet.campinas.ui.screens.AdotarScreen
-import com.adotarpet.campinas.ui.screens.ConfirmationScreen
-import com.adotarpet.campinas.ui.screens.DonationScreen
-import com.adotarpet.campinas.data.UserRepository
-import com.adotarpet.campinas.ui.screens.HelpScreen
-import com.adotarpet.campinas.ui.screens.LoginScreen
-import com.adotarpet.campinas.ui.screens.HistoryScreen
-import com.adotarpet.campinas.ui.screens.HomeScreen
-import com.adotarpet.campinas.ui.screens.MyDataScreen
-import com.adotarpet.campinas.ui.screens.MyPetsScreen
-import com.adotarpet.campinas.ui.screens.PetDetailScreen
-import com.adotarpet.campinas.ui.screens.ProfileScreen
-import com.adotarpet.campinas.ui.screens.RegisterAnimalScreen
-import com.adotarpet.campinas.ui.screens.RescueScreen
-import com.adotarpet.campinas.ui.screens.VolunteerScreen
-import com.adotarpet.campinas.ui.theme.AdotarPetTheme
+import com.adotarpet.campinas.view.components.AdotarPetBottomBar
+import com.adotarpet.campinas.view.AdoptionFormView
+import com.adotarpet.campinas.view.AdotarView
+import com.adotarpet.campinas.view.ConfirmationView
+import com.adotarpet.campinas.view.DonationView
+import com.adotarpet.campinas.repository.UserRepository
+import com.adotarpet.campinas.view.HelpView
+import com.adotarpet.campinas.view.LoginView
+import com.adotarpet.campinas.view.HistoryView
+import com.adotarpet.campinas.view.RequestDetailView
+import com.adotarpet.campinas.view.HomeView
+import com.adotarpet.campinas.view.MyDataView
+import com.adotarpet.campinas.view.MyPetsView
+import com.adotarpet.campinas.view.PetDetailView
+import com.adotarpet.campinas.view.ProfileView
+import com.adotarpet.campinas.view.RegisterAnimalView
+import com.adotarpet.campinas.view.RescueView
+import com.adotarpet.campinas.view.VolunteerView
+import com.adotarpet.campinas.view.theme.AdotarPetTheme
 import kotlinx.coroutines.launch
 
 private val LIGHT_SCRIM = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
@@ -89,10 +90,10 @@ class MainActivity : ComponentActivity() {
 fun AdotarPetApp() {
     val loggedIn by SettingsRepository.loggedIn.collectAsState()
     if (loggedIn) {
-        // Ao sair da conta, AdotarPetMain deixa a composição e a navegação recomeça do início no próximo login.
+
         AdotarPetMain()
     } else {
-        LoginScreen(
+        LoginView(
             onLoggedIn = { UserRepository.fillBlanks(email = SettingsRepository.accountEmail.value) }
         )
     }
@@ -117,7 +118,7 @@ private fun AdotarPetMain() {
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        // A bottom bar aparece em TODAS as telas do app, sem exceção.
+
         bottomBar = {
             AdotarPetBottomBar(
                 currentRoute = currentRoute,
@@ -143,26 +144,26 @@ private fun AdotarPetMain() {
             popExitTransition = { fadeOut(tween(160)) + slideOutHorizontally(tween(260)) { it / 14 } }
         ) {
             composable(Screen.Home.route) {
-                HomeScreen(
+                HomeView(
                     onQuemAdotarClick = { navController.navigate(Screen.Adotar.route) },
                     onDoarClick = { navController.navigate(Screen.Doar.route) },
                     onVoluntarioClick = { navController.navigate(Screen.Voluntario.route) }
                 )
             }
             composable(Screen.Doar.route) {
-                DonationScreen(
+                DonationView(
                     onVoltarClick = { navController.popBackStack(Screen.Home.route, inclusive = false) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.Voluntario.route) {
-                VolunteerScreen(
+                VolunteerView(
                     onVoltarClick = { navController.popBackStack(Screen.Home.route, inclusive = false) },
                     onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.Adotar.route) {
-                AdotarScreen(
+                AdotarView(
                     onConhecerClick = { petId ->
                         navController.navigate(Screen.PetDetail.createRoute(petId))
                     },
@@ -176,7 +177,7 @@ private fun AdotarPetMain() {
             }
             composable(Screen.PetDetail.route) { backStack ->
                 val petId = backStack.arguments?.getString("petId") ?: return@composable
-                PetDetailScreen(
+                PetDetailView(
                     petId = petId,
                     onBackClick = { navController.popBackStack() },
                     onAdotarClick = { id -> navController.navigate(Screen.Formulario.createRoute(id)) },
@@ -189,7 +190,7 @@ private fun AdotarPetMain() {
             }
             composable(Screen.Formulario.route) { backStack ->
                 val petId = backStack.arguments?.getString("petId") ?: return@composable
-                AdoptionFormScreen(
+                AdoptionFormView(
                     petId = petId,
                     onBackClick = { navController.popBackStack() },
                     onEnviarClick = { id ->
@@ -201,7 +202,7 @@ private fun AdotarPetMain() {
             }
             composable(Screen.Confirmacao.route) { backStack ->
                 val petId = backStack.arguments?.getString("petId") ?: return@composable
-                ConfirmationScreen(
+                ConfirmationView(
                     petId = petId,
                     onVerOutrosClick = {
                         navController.navigate(Screen.Adotar.route) {
@@ -216,7 +217,7 @@ private fun AdotarPetMain() {
                 )
             }
             composable(Screen.Perfil.route) {
-                ProfileScreen(
+                ProfileView(
                     onPetClick = { petId -> navController.navigate(Screen.PetDetail.createRoute(petId)) },
                     onAdminPanelClick = { navController.navigate(Screen.AdminPainel.route) },
                     onMeusDadosClick = { navController.navigate(Screen.Dados.route) },
@@ -225,15 +226,15 @@ private fun AdotarPetMain() {
                 )
             }
             composable(Screen.Resgate.route) {
-                RescueScreen(
+                RescueView(
                     onEnviarResgate = {
-                        /* TODO: enviar para backend/API */
+
                     }
                 )
             }
             composable(Screen.CadastroAnimal.route) {
                 AdminOnly(isAdmin, onDenied = { navController.popBackStack() }) {
-                    RegisterAnimalScreen(
+                    RegisterAnimalView(
                         onBackClick = { navController.popBackStack() },
                         onSaved = {
                             aviso("Animal cadastrado com sucesso!")
@@ -247,7 +248,7 @@ private fun AdotarPetMain() {
             composable(Screen.EditarAnimal.route) { backStack ->
                 val petId = backStack.arguments?.getString("petId") ?: return@composable
                 AdminOnly(isAdmin, onDenied = { navController.popBackStack() }) {
-                    RegisterAnimalScreen(
+                    RegisterAnimalView(
                         petId = petId,
                         onBackClick = { navController.popBackStack() },
                         onSaved = {
@@ -258,7 +259,7 @@ private fun AdotarPetMain() {
                 }
             }
             composable(Screen.Dados.route) {
-                MyDataScreen(
+                MyDataView(
                     onBackClick = { navController.popBackStack() },
                     onSaved = {
                         aviso("Seus dados foram salvos")
@@ -267,14 +268,22 @@ private fun AdotarPetMain() {
                 )
             }
             composable(Screen.Historico.route) { backStack ->
-                HistoryScreen(
+                HistoryView(
                     tipo = backStack.arguments?.getString("tipo") ?: "TODOS",
+                    onEntryClick = { id -> navController.navigate(Screen.SolicitacaoDetalhe.createRoute(id)) },
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable(Screen.SolicitacaoDetalhe.route) { backStack ->
+                val id = backStack.arguments?.getString("id") ?: return@composable
+                RequestDetailView(
+                    entryId = id,
                     onBackClick = { navController.popBackStack() }
                 )
             }
             composable(Screen.AdminPainel.route) {
                 AdminOnly(isAdmin, onDenied = { navController.popBackStack() }) {
-                    AdminPanelScreen(
+                    AdminPanelView(
                         onBackClick = { navController.popBackStack() },
                         onCadastrarClick = { navController.navigate(Screen.CadastroAnimal.route) },
                         onGerenciarClick = { navController.navigate(Screen.MeusAnimais.route) },
@@ -284,12 +293,12 @@ private fun AdotarPetMain() {
             }
             composable(Screen.Relatorios.route) {
                 AdminOnly(isAdmin, onDenied = { navController.popBackStack() }) {
-                    AdminReportsScreen(onBackClick = { navController.popBackStack() })
+                    AdminReportsView(onBackClick = { navController.popBackStack() })
                 }
             }
             composable(Screen.MeusAnimais.route) {
                 AdminOnly(isAdmin, onDenied = { navController.popBackStack() }) {
-                    MyPetsScreen(
+                    MyPetsView(
                         onBackClick = { navController.popBackStack() },
                         onPetClick = { id -> navController.navigate(Screen.PetDetail.createRoute(id)) },
                         onEditClick = { id -> navController.navigate(Screen.EditarAnimal.createRoute(id)) },
@@ -299,13 +308,12 @@ private fun AdotarPetMain() {
                 }
             }
             composable(Screen.Ajuda.route) {
-                HelpScreen(onBackClick = { navController.popBackStack() })
+                HelpView(onBackClick = { navController.popBackStack() })
             }
         }
     }
 }
 
-/** Mostra o conteúdo só para administradores; para os outros, volta para a tela anterior. */
 @Composable
 private fun AdminOnly(isAdmin: Boolean, onDenied: () -> Unit, content: @Composable () -> Unit) {
     if (isAdmin) content() else LaunchedEffect(Unit) { onDenied() }

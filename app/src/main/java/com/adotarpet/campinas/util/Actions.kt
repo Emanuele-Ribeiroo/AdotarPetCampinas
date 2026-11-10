@@ -7,7 +7,6 @@ import android.net.Uri
 import android.widget.Toast
 import com.adotarpet.campinas.model.Pet
 
-/** Dados de contato da ONG. São fictícios: troque pelos reais antes de publicar o app. */
 object OngInfo {
     const val PHONE_DISPLAY = "(19) 3232-0000"
     const val PHONE_DIAL = "1932320000"

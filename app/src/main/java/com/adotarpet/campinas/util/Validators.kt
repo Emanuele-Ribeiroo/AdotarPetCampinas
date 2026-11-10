@@ -1,6 +1,5 @@
 package com.adotarpet.campinas.util
 
-/** Máscaras (formatam enquanto o usuário digita) e validações dos formulários. */
 object Validators {
 
     private fun digits(text: String, max: Int) = text.filter { it.isDigit() }.take(max)
@@ -55,7 +54,6 @@ object Validators {
 
     private val EMAIL_REGEX = Regex("^[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}$")
 
-    /** Mantém só os dígitos digitados (o que o estado guarda; a máscara é só visual). */
     fun onlyCpf(text: String) = digits(text, 11)
     fun onlyPhone(text: String) = digits(text, 11)
     fun onlyCep(text: String) = digits(text, 8)

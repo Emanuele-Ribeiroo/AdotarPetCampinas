@@ -6,7 +6,6 @@ import com.adotarpet.campinas.model.Pet
 import com.adotarpet.campinas.model.PetGender
 import com.adotarpet.campinas.model.PetSpecies
 
-/** Números do relatório do administrador, calculados a partir dos dados guardados no aparelho. */
 data class Report(
     val totalPets: Int,
     val dogs: Int,
@@ -33,7 +32,6 @@ fun buildReport(pets: List<Pet>, history: List<HistoryEntry>): Report = Report(
     countByType = HistoryType.entries.associateWith { type -> history.count { it.type == type } }
 )
 
-/** Texto do relatório, pronto para compartilhar (WhatsApp, e-mail...). */
 fun Report.toText(history: List<HistoryEntry>): String = buildString {
     appendLine("Relatório — Adotar Pet Campinas")
     appendLine()

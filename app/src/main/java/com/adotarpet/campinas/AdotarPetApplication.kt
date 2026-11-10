@@ -1,10 +1,10 @@
 package com.adotarpet.campinas
 
 import android.app.Application
-import com.adotarpet.campinas.data.HistoryRepository
-import com.adotarpet.campinas.data.PetRepository
-import com.adotarpet.campinas.data.SettingsRepository
-import com.adotarpet.campinas.data.UserRepository
+import com.adotarpet.campinas.repository.HistoryRepository
+import com.adotarpet.campinas.repository.PetRepository
+import com.adotarpet.campinas.repository.SettingsRepository
+import com.adotarpet.campinas.repository.UserRepository
 
 class AdotarPetApplication : Application() {
     override fun onCreate() {
