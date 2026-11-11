@@ -248,7 +248,7 @@ private fun DonationCallout(onDoarClick: () -> Unit) {
             alignment = Alignment.BottomEnd,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .fillMaxWidth(0.95f)
+                .size(200.dp)
         )
         Column(
             modifier = Modifier
